@@ -5,85 +5,261 @@
 <meta name="viewport"
       content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#102024">
+
 <title>Последний порт</title>
+
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <style>
 :root {
   color-scheme: dark;
-  --bg:#0c171c; --panel:#15272d; --line:#30474d;
-  --gold:#f3bb68; --text:#e5ece7; --muted:#9aafb0;
+  --bg:#0c171c;
+  --panel:#15272d;
+  --line:#42504b;
+  --gold:#e6c384;
+  --text:#e5ece7;
+  --muted:#a0afaa;
 }
+
 * { box-sizing:border-box }
+
 body {
-  margin:0; background:var(--bg); color:var(--text);
+  margin:0;
+  color:var(--text);
   font:15px system-ui,sans-serif;
+  background:
+    radial-gradient(ellipse at 50% 0%,#293b3e 0%,transparent 65%),
+    #091216;
 }
-main { max-width:960px; margin:auto; padding:12px 12px 28px }
+
+main {
+  max-width:1100px;
+  margin:auto;
+  padding:10px 10px 40px;
+  padding-bottom:max(40px,env(safe-area-inset-bottom));
+}
+
 header {
-  display:flex; align-items:center; justify-content:space-between;
-  gap:12px; padding:10px 0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:7px 3px;
 }
-h1 { font-size:23px; margin:0; letter-spacing:1px }
+
+header small {
+  font-size:9px;
+  letter-spacing:2px;
+  color:#bcab85;
+}
+
+h1 {
+  margin:0;
+  font-size:22px;
+  letter-spacing:2px;
+  color:#f0e4ca;
+}
+
 small,.muted { color:var(--muted) }
+
 .resources {
-  display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:5px;
+  margin:10px 0;
 }
+
 .pill {
-  background:var(--panel); border:1px solid var(--line);
-  border-radius:10px; padding:9px 12px;
+  padding:8px;
+  border:1px solid #56605a;
+  border-radius:6px;
+  font-size:13px;
+  white-space:nowrap;
+  background:linear-gradient(#233337,#132025);
+  box-shadow:inset 0 1px #ffffff0a;
 }
+
+.resources .pill { text-align:center }
+
 .scene {
-  position:relative; overflow:hidden; border-radius:16px;
-  border:1px solid var(--line); background:#142c34;
+  position:relative;
+  overflow:hidden;
+  border:1px solid #74674c;
+  border-radius:9px;
+  background:#15282c;
+  box-shadow:0 14px 35px #0007;
 }
-canvas { display:block; width:100%; aspect-ratio:900/530 }
+
+canvas {
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:900/700;
+  touch-action:pan-y;
+}
+
 .badge {
-  position:absolute; top:12px; left:12px; padding:7px 10px;
-  background:#0b151dcc; border-radius:8px; font-size:12px;
+  position:absolute;
+  top:9px;
+  left:9px;
+  max-width:90%;
+  padding:7px 9px;
+  font-size:9px;
+  letter-spacing:1px;
+  color:#e7d6aa;
+  border:1px solid #8b775844;
+  border-radius:4px;
+  background:#111b20dd;
   pointer-events:none;
 }
-nav { display:flex; gap:7px; margin:13px 0 }
+
+nav {
+  display:flex;
+  gap:6px;
+  position:sticky;
+  top:0;
+  z-index:5;
+  padding:8px 0;
+  margin:4px 0;
+  background:#0c171cf2;
+  backdrop-filter:blur(12px);
+}
+
 button {
-  color:var(--text); background:#263b42;
-  border:1px solid #496068; border-radius:10px;
-  padding:11px 13px; font:inherit; cursor:pointer;
+  color:var(--text);
+  border:1px solid #69705a;
+  border-radius:6px;
+  padding:11px 10px;
+  font:inherit;
+  background:linear-gradient(#2e3e41,#1b292d);
+  cursor:pointer;
   touch-action:manipulation;
 }
+
 button:active { transform:translateY(1px) }
-button:disabled { opacity:.45; cursor:default }
-nav button { flex:1; padding:11px 5px }
-button.active,.primary {
-  color:#172026; background:var(--gold); border-color:var(--gold);
+
+button:disabled {
+  opacity:.45;
+  cursor:default;
 }
+
+button:focus-visible {
+  outline:2px solid var(--gold);
+  outline-offset:3px;
+}
+
+nav button {
+  flex:1;
+  padding:11px 4px;
+  font-size:13px;
+}
+
+nav button.active,
+button.primary {
+  color:#241d13;
+  background:linear-gradient(#e6c384,#ba8b4d);
+  border-color:#eed19a;
+}
+
 .grid {
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr));
-  gap:10px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
 }
+
 .card {
-  padding:15px; border:1px solid var(--line);
-  background:var(--panel); border-radius:13px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:linear-gradient(145deg,#223236,#142126);
+  scroll-margin-top:75px;
 }
-.card h3 { margin:0 0 7px; font-size:17px }
-.card p { color:var(--muted); line-height:1.45; margin:8px 0 13px }
-.card button { width:100% }
-.hero { font-size:32px; float:right }
+
+.card h3 {
+  margin:0 0 7px;
+  font-size:14px;
+  color:#ecdec0;
+}
+
+.card p {
+  margin:8px 0 13px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.card button {
+  width:100%;
+  padding:10px 5px;
+  font-size:11px;
+  border-radius:5px;
+}
+
+.hero {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:48px;
+  height:48px;
+  margin-bottom:10px;
+  border:1px solid #8b7956;
+  border-radius:8px;
+  background:radial-gradient(circle at 40% 25%,#677667,#293b3b);
+  font-size:27px;
+}
+
 .progress {
-  height:10px; background:#081216; border-radius:8px;
-  overflow:hidden; margin:10px 0;
+  height:10px;
+  margin:10px 0;
+  overflow:hidden;
+  background:#081216;
+  border-radius:8px;
 }
-.progress div { height:100%; background:#7cbb8a }
+
+.progress div {
+  height:100%;
+  background:#7cbb8a;
+  transition:width .2s linear;
+}
+
+.progress.enemy div { background:#be765e }
+
 #notice {
-  min-height:44px; color:var(--gold); padding:10px 2px;
-  line-height:1.4;
+  min-height:46px;
+  padding:12px 2px;
+  color:var(--gold);
+  font-size:12px;
+  line-height:1.5;
 }
-footer { margin-top:18px; font-size:12px; color:var(--muted) }
-@media(max-width:420px) {
-  h1 { font-size:19px }
-  .pill { padding:8px; font-size:13px }
-  main { padding:8px 8px 24px }
+
+footer {
+  margin-top:15px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.5;
+}
+
+.hint {
+  margin:0 0 9px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+@media(min-width:760px) {
+  h1 { font-size:28px }
+  .grid { grid-template-columns:repeat(3,minmax(0,1fr)) }
+  .card h3 { font-size:17px }
+  .card p,.card button { font-size:14px }
+}
+
+@media(max-width:350px) {
+  h1 { font-size:18px }
+  .pill { font-size:11px }
+  .grid { grid-template-columns:1fr }
 }
 </style>
 </head>
+
 <body>
 <main>
   <header>
@@ -91,470 +267,1390 @@ footer { margin-top:18px; font-size:12px; color:var(--muted) }
       <small>СТРАТЕГИЯ ВЫЖИВАНИЯ</small>
       <h1>ПОСЛЕДНИЙ ПОРТ</h1>
     </div>
-    <span class="pill" id="day"></span>
+    <span class="pill" id="day">Волна 1</span>
   </header>
 
-  <div class="resources" id="resources"></div>
-
-  <div class="scene">
-    <canvas id="world" width="900" height="530"
-            aria-label="База выживших и оборона"></canvas>
-    <div class="badge" id="badge">СЕКТОР 07 · ПРИБРЕЖНОЕ УБЕЖИЩЕ</div>
+  <div class="resources">
+    <span class="pill" title="Еда">🌾 <span id="food">0</span></span>
+    <span class="pill" title="Древесина">🪵 <span id="wood">0</span></span>
+    <span class="pill" title="Детали">⚙️ <span id="parts">0</span></span>
+    <span class="pill" title="Урон отряда">⚔️ <span id="power">0</span></span>
   </div>
 
-  <nav>
-    <button data-tab="base">База</button>
-    <button data-tab="heroes">Герои</button>
-    <button data-tab="map">Вылазки</button>
-    <button data-tab="battle">Оборона</button>
+  <div class="scene">
+    <canvas
+      id="world"
+      width="900"
+      height="700"
+      aria-label="Изометрическая база выживших. Управление зданиями также доступно во вкладке База."
+    ></canvas>
+    <div class="badge" id="badge">
+      СЕКТОР 07 · ПОСЛЕДНИЙ ПОРТ
+    </div>
+  </div>
+
+  <nav aria-label="Разделы игры">
+    <button type="button" data-tab="base">База</button>
+    <button type="button" data-tab="heroes">Герои</button>
+    <button type="button" data-tab="map">Вылазки</button>
+    <button type="button" data-tab="battle">Оборона</button>
   </nav>
 
   <section id="panel"></section>
-  <div id="notice" role="status">Командир, укрепи стену до следующей атаки.</div>
+
+  <div id="notice" role="status">
+    Командир, убежище готово. Нажми на здание или открой оборону.
+  </div>
+
   <footer>
-    Прототип · Локальное сохранение · Без покупок и рекламы
+    Прототип · Сохранение на этом устройстве · Без покупок и рекламы<br>
+    Доход за отсутствие: максимум 8 часов. Бой в фоне приостанавливается.
   </footer>
 </main>
 
 <script>
 "use strict";
 
+/* -------------------------------------------------------
+   СОСТОЯНИЕ И СОХРАНЕНИЯ
+------------------------------------------------------- */
+
 const $ = id => document.getElementById(id);
 const KEY = "last-port-prototype-v1";
-const fresh = () => ({
-  food:180, wood:200, parts:50,
-  wave:1,
-  buildings:{hq:1,farm:1,mill:1,barracks:1,wall:1},
-  heroes:[1,1,1],
-  expedition:null,
-  last:Date.now()
-});
 
-let s;
-try {
-  s = JSON.parse(localStorage.getItem(KEY)) || fresh();
-  if (!s.buildings || !Array.isArray(s.heroes)) s = fresh();
-} catch { s = fresh(); }
+function fresh() {
+  return {
+    food:180,
+    wood:200,
+    parts:50,
+    wave:1,
+    buildings:{
+      hq:1,
+      farm:1,
+      mill:1,
+      barracks:1,
+      wall:1
+    },
+    heroes:[1,1,1],
+    expedition:null,
+    last:Date.now()
+  };
+}
 
-let storageWarning = false;
+function loadState() {
+  const state=fresh();
+
+  try {
+    const saved=JSON.parse(localStorage.getItem(KEY));
+    if(!saved || typeof saved!=="object") return state;
+
+    for(const key of ["food","wood","parts"]) {
+      if(Number.isFinite(saved[key]) && saved[key]>=0) {
+        state[key]=saved[key];
+      }
+    }
+
+    if(Number.isInteger(saved.wave) && saved.wave>=1) {
+      state.wave=saved.wave;
+    }
+
+    for(const id of Object.keys(state.buildings)) {
+      const level=saved.buildings?.[id];
+      if(Number.isInteger(level) && level>=1 && level<=100) {
+        state.buildings[id]=level;
+      }
+    }
+
+    if(Array.isArray(saved.heroes)) {
+      state.heroes=state.heroes.map((level,i)=>{
+        const value=saved.heroes[i];
+        return Number.isInteger(value) && value>=1 && value<=100
+          ?value:level;
+      });
+    }
+
+    const ex=saved.expedition;
+    if(ex && ["dock","block"].includes(ex.kind) &&
+       Number.isFinite(ex.ends)) {
+      state.expedition={kind:ex.kind,ends:ex.ends};
+    }
+
+    if(Number.isFinite(saved.last)) state.last=saved.last;
+  } catch {
+    // Если сохранение недоступно или повреждено, начинаем новую игру.
+  }
+
+  return state;
+}
+
+let s=loadState();
+let tab="base";
+let fight=null;
+let lastShot=0;
+let storageWarning=false;
+
+function say(text) {
+  $("notice").textContent=text;
+}
+
 function save() {
-  s.last = Date.now();
-  try { localStorage.setItem(KEY, JSON.stringify(s)); }
-  catch {
-    if (!storageWarning) {
-      storageWarning = true;
-      say("Хранилище недоступно: прогресс сохранится только до закрытия игры.");
+  s.last=Date.now();
+
+  try {
+    localStorage.setItem(KEY,JSON.stringify(s));
+  } catch {
+    if(!storageWarning) {
+      storageWarning=true;
+      say("Хранилище недоступно: прогресс может исчезнуть после закрытия игры.");
     }
   }
 }
-function say(text) { $("notice").textContent = text; }
 
 try {
-  const tg = window.Telegram?.WebApp;
-  if (tg) {
+  const tg=window.Telegram?.WebApp;
+
+  if(tg) {
     tg.ready();
     tg.expand();
     tg.setHeaderColor("#102024");
     tg.setBackgroundColor("#0c171c");
   }
-} catch {}
+} catch {
+  // Игра работает и вне Telegram.
+}
 
-const defs = {
+const defs={
   hq:{
-    name:"Штаб", desc:"Открывает новые уровни остальных зданий.",
-    x:2,y:1,color:"#bc8b60",short:"ШТАБ"
+    name:"Штаб",
+    desc:"Открывает новые уровни остальных зданий.",
+    short:"ШТАБ"
   },
   farm:{
-    name:"Теплицы", desc:"Производят еду для улучшений и экспедиций.",
-    x:0,y:1,color:"#658d62",short:"ТЕПЛИЦЫ"
+    name:"Теплицы",
+    desc:"Производят еду для развития базы и вылазок.",
+    short:"ТЕПЛИЦЫ"
   },
   mill:{
-    name:"Лесопилка", desc:"Производит древесину для строительства.",
-    x:0,y:3,color:"#a27c54",short:"ЛЕСОПИЛКА"
+    name:"Лесопилка",
+    desc:"Производит древесину для строительства.",
+    short:"ЛЕСОПИЛКА"
   },
   barracks:{
-    name:"Казармы", desc:"Увеличивают урон защитников.",
-    x:3,y:3,color:"#698c92",short:"КАЗАРМЫ"
+    name:"Казармы",
+    desc:"Каждый уровень добавляет 5 урона в секунду.",
+    short:"КАЗАРМЫ"
   },
   wall:{
-    name:"Периметр", desc:"Увеличивает прочность обороны.",
-    x:4,y:1,color:"#898f97",short:"ПЕРИМЕТР"
+    name:"Периметр",
+    desc:"Каждый уровень добавляет 65 прочности обороны.",
+    short:"ПЕРИМЕТР"
   }
 };
-const heroes = [
-  {name:"Мира «Искра»",role:"Инженер · +18 прочности за уровень",icon:"🔧"},
-  {name:"Лев «Север»",role:"Следопыт · +3 урона за уровень",icon:"🎯"},
-  {name:"Ада «Пульс»",role:"Медик · +12 прочности за уровень",icon:"🩺"}
+
+const heroes=[
+  {
+    name:"Мира «Искра»",
+    role:"Инженер",
+    desc:"+18 прочности за уровень.",
+    icon:"🔧"
+  },
+  {
+    name:"Лев «Север»",
+    role:"Следопыт",
+    desc:"+3 урона в секунду за уровень.",
+    icon:"🎯"
+  },
+  {
+    name:"Ада «Пульс»",
+    role:"Медик",
+    desc:"+12 прочности за уровень.",
+    icon:"🩺"
+  }
 ];
 
 function produce(seconds) {
-  s.food += seconds * s.buildings.farm * .45;
-  s.wood += seconds * s.buildings.mill * .35;
+  s.food+=seconds*s.buildings.farm*.45;
+  s.wood+=seconds*s.buildings.mill*.35;
 }
-produce(Math.min(28800, Math.max(0, (Date.now()-s.last)/1000)));
 
-let tab = "base";
-let fight = null;
-let lastTick = Date.now();
-let lastSaved = Date.now();
-let lastShot = 0;
+const offlineSeconds=Math.min(
+  28800,
+  Math.max(0,(Date.now()-s.last)/1000)
+);
+
+produce(offlineSeconds);
 
 function cost(id) {
-  const n = s.buildings[id];
-  return {wood:Math.round(65*Math.pow(1.65,n-1)), food:35*n};
-}
-function power() {
-  return 9 + s.buildings.barracks*5 + s.heroes[1]*3;
-}
-function maxHP() {
-  return 170+s.buildings.wall*65+s.heroes[0]*18+s.heroes[2]*12;
+  const level=s.buildings[id];
+
+  return {
+    wood:Math.round(65*Math.pow(1.65,level-1)),
+    food:35*level
+  };
 }
 
+function power() {
+  return 9+s.buildings.barracks*5+s.heroes[1]*3;
+}
+
+function maxHP() {
+  return 170+
+    s.buildings.wall*65+
+    s.heroes[0]*18+
+    s.heroes[2]*12;
+}
+
+const numberFormat=new Intl.NumberFormat("ru-RU",{
+  maximumFractionDigits:0
+});
+
+function fmt(value) {
+  return numberFormat.format(Math.floor(value));
+}
+
+/* -------------------------------------------------------
+   СТРОИТЕЛЬСТВО И ГЕРОИ
+------------------------------------------------------- */
+
 function upgrade(id) {
-  if (fight) return say("Строительство недоступно во время атаки.");
-  const c = cost(id);
-  if (id!=="hq" && s.buildings[id]>=s.buildings.hq+1)
+  if(!defs[id]) return;
+
+  if(fight) {
+    return say("Строительство недоступно во время атаки.");
+  }
+
+  if(s.buildings[id]>=100) {
+    return say("Достигнут максимальный уровень прототипа.");
+  }
+
+  if(id!=="hq" && s.buildings[id]>=s.buildings.hq+1) {
     return say("Сначала улучши штаб.");
-  if (s.wood<c.wood || s.food<c.food)
+  }
+
+  const price=cost(id);
+
+  if(s.wood<price.wood || s.food<price.food) {
     return say("Не хватает ресурсов. Подожди производство или отправь вылазку.");
-  s.wood-=c.wood;
-  s.food-=c.food;
+  }
+
+  s.wood-=price.wood;
+  s.food-=price.food;
   s.buildings[id]++;
-  save(); render();
-  say(defs[id].name+" улучшены.");
+
+  save();
+  render();
+  say("Улучшение завершено: "+defs[id].name+" · уровень "+s.buildings[id]+".");
 }
 
 function train(i) {
-  if (fight) return say("Герои заняты обороной.");
-  const c=s.heroes[i]*25;
-  if (s.parts<c) return say("Не хватает деталей: их приносят вылазки и оборона.");
-  s.parts-=c;
+  if(!heroes[i]) return;
+  if(fight) return say("Герои заняты обороной.");
+  if(s.expedition) return say("Дождись возвращения отряда.");
+
+  if(s.heroes[i]>=100) {
+    return say("Достигнут максимальный уровень героя.");
+  }
+
+  const price=s.heroes[i]*25;
+
+  if(s.parts<price) {
+    return say("Не хватает деталей. Их приносят вылазки и оборона.");
+  }
+
+  s.parts-=price;
   s.heroes[i]++;
-  save(); render();
-  say(heroes[i].name+" получает новый уровень.");
+
+  save();
+  render();
+  say(heroes[i].name+" получает уровень "+s.heroes[i]+".");
 }
 
+/* -------------------------------------------------------
+   ВЫЛАЗКИ
+------------------------------------------------------- */
+
 function expedition(kind) {
-  if (s.expedition) return say("Отряд уже в пути.");
-  if (fight) return say("Сначала заверши оборону.");
+  if(!["dock","block"].includes(kind)) return;
+  if(s.expedition) return say("Отряд уже в пути.");
+  if(fight) return say("Сначала заверши оборону.");
+
   const price=kind==="dock"?45:25;
-  if (s.food<price) return say("Не хватает еды для отряда.");
+
+  if(s.food<price) {
+    return say("Не хватает еды для отряда.");
+  }
+
   s.food-=price;
   s.expedition={
-    kind, ends:Date.now()+(kind==="dock"?90000:45000)
+    kind,
+    ends:Date.now()+(kind==="dock"?90000:45000)
   };
-  save(); render();
+
+  save();
+  render();
   say("Отряд вышел за периметр.");
 }
+
 function checkExpedition() {
-  if (!s.expedition || Date.now()<s.expedition.ends) return;
+  if(!s.expedition || Date.now()<s.expedition.ends) return false;
+
   const dock=s.expedition.kind==="dock";
+
   s.wood+=dock?110:65;
   s.food+=dock?30:45;
   s.parts+=dock?40:15;
   s.expedition=null;
+
   save();
+
   say(dock
     ?"Отряд вернулся из доков: +110 дерева, +30 еды, +40 деталей."
-    :"Отряд вернулся: +65 дерева, +45 еды, +15 деталей.");
+    :"Отряд вернулся: +65 дерева, +45 еды, +15 деталей."
+  );
+
+  return true;
 }
 
+/* -------------------------------------------------------
+   ОБОРОНА
+------------------------------------------------------- */
+
 function startFight() {
-  if (fight) return;
-  if (s.expedition) return say("Дождись возвращения отряда из вылазки.");
+  if(fight) return;
+
+  if(s.expedition) {
+    return say("Дождись возвращения отряда из вылазки.");
+  }
+
   const enemyMax=140+s.wave*85;
+
   fight={
-    hp:maxHP(), max:maxHP(),
-    enemy:enemyMax, enemyMax, wave:s.wave,
+    hp:maxHP(),
+    max:maxHP(),
+    enemy:enemyMax,
+    enemyMax,
+    wave:s.wave,
     flash:0
   };
+
+  lastShot=0;
   tab="battle";
+
   render();
-  say("Заражённые у стены! Огонь ведётся автоматически. Помогай кнопкой удара.");
+  say("Заражённые у стены! Отряд стреляет автоматически. Помогай прицельным ударом.");
 }
+
 function shoot() {
-  if (!fight || Date.now()-lastShot<550) return;
+  if(!fight || document.hidden || Date.now()-lastShot<550) return;
+
   lastShot=Date.now();
   fight.enemy-=power()*.8;
   fight.flash=.15;
+
   resolveFight();
+  updateLiveUI();
 }
+
 function resolveFight() {
-  if (!fight) return;
-  if (fight.enemy<=0) {
-    const n=fight.wave;
-    s.wood+=60+n*20;
-    s.food+=45+n*10;
-    s.parts+=15+n*5;
+  if(!fight) return;
+
+  if(fight.enemy<=0) {
+    const wave=fight.wave;
+
+    s.wood+=60+wave*20;
+    s.food+=45+wave*10;
+    s.parts+=15+wave*5;
     s.wave++;
+
     fight=null;
-    save(); render();
-    say("Волна отражена! Получены дерево, еда и детали. Оборона восстановлена.");
-  } else if (fight.hp<=0) {
+
+    save();
+    render();
+
+    say(
+      "Волна отражена! +"+(60+wave*20)+" дерева, +"+
+      (45+wave*10)+" еды, +"+(15+wave*5)+
+      " деталей. Периметр восстановлен."
+    );
+  } else if(fight.hp<=0) {
     s.food=Math.max(0,s.food-35);
     fight=null;
-    save(); render();
-    say("Отступление! Потеряно 35 еды. Периметр восстановлен — усиливай базу.");
+
+    save();
+    render();
+
+    say("Отступление! Потеряно 35 еды. Периметр восстановлен. Усиль базу и повтори атаку.");
+  }
+}
+
+/* -------------------------------------------------------
+   ИНТЕРФЕЙС
+------------------------------------------------------- */
+
+function updateLiveUI() {
+  $("day").textContent="Волна "+s.wave;
+  $("food").textContent=fmt(s.food);
+  $("wood").textContent=fmt(s.wood);
+  $("parts").textContent=fmt(s.parts);
+  $("power").textContent=fmt(power());
+
+  const timer=$("exp-timer");
+
+  if(timer && s.expedition) {
+    timer.textContent=Math.max(
+      0,
+      Math.ceil((s.expedition.ends-Date.now())/1000)
+    );
+  }
+
+  if(fight && $("fight-hp")) {
+    $("fight-hp").textContent=Math.max(0,Math.ceil(fight.hp));
+    $("fight-enemy").textContent=Math.max(0,Math.ceil(fight.enemy));
+
+    $("hp-bar").style.width=
+      Math.max(0,fight.hp/fight.max*100)+"%";
+
+    $("enemy-bar").style.width=
+      Math.max(0,fight.enemy/fight.enemyMax*100)+"%";
   }
 }
 
 function render() {
-  $("day").textContent="Волна "+s.wave;
-  $("resources").innerHTML=
-    `<span class="pill">🌾 ${Math.floor(s.food)}</span>
-     <span class="pill">🪵 ${Math.floor(s.wood)}</span>
-     <span class="pill">⚙️ ${Math.floor(s.parts)}</span>
-     <span class="pill">⚔️ ${power()}</span>`;
-
-  document.querySelectorAll("nav button").forEach(b=>{
-    b.classList.toggle("active",b.dataset.tab===tab);
+  document.querySelectorAll("nav button").forEach(button=>{
+    const active=button.dataset.tab===tab;
+    button.classList.toggle("active",active);
+    button.setAttribute("aria-pressed",String(active));
   });
 
   if(tab==="base") {
-    $("panel").innerHTML=`<div class="grid">${
-      Object.entries(defs).map(([id,d])=>{
-        const c=cost(id);
-        return `<article class="card">
-          <h3>${d.name} · ур. ${s.buildings[id]}</h3>
-          <p>${d.desc}</p>
-          <button data-up="${id}" ${fight?"disabled":""}>
-            Улучшить · 🪵 ${c.wood} · 🌾 ${c.food}
-          </button>
-        </article>`;
-      }).join("")
-    }</div>`;
+    $("panel").innerHTML=`
+      <p class="hint">
+        Нажми на здание на карте или выбери улучшение ниже.
+      </p>
+      <div class="grid">
+        ${Object.entries(defs).map(([id,d])=>{
+          const price=cost(id);
+          let extra="";
+
+          if(id==="farm") {
+            extra=`<br>Производство: ${(s.buildings.farm*.45).toFixed(2)} еды/сек.`;
+          }
+
+          if(id==="mill") {
+            extra=`<br>Производство: ${(s.buildings.mill*.35).toFixed(2)} дерева/сек.`;
+          }
+
+          return `
+            <article class="card">
+              <h3>${d.name} · ур. ${s.buildings[id]}</h3>
+              <p>${d.desc}${extra}</p>
+              <button type="button" data-up="${id}"
+                ${fight || s.buildings[id]>=100?"disabled":""}>
+                Улучшить · 🪵 ${fmt(price.wood)} · 🌾 ${fmt(price.food)}
+              </button>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    `;
   }
 
   if(tab==="heroes") {
-    $("panel").innerHTML=`<div class="grid">${
-      heroes.map((h,i)=>`<article class="card">
-        <span class="hero">${h.icon}</span>
-        <h3>${h.name}</h3>
-        <p>${h.role}<br>Уровень: ${s.heroes[i]}</p>
-        <button data-train="${i}" ${fight?"disabled":""}>
-          Обучить · ⚙️ ${s.heroes[i]*25}
-        </button>
-      </article>`).join("")
-    }</div>`;
+    $("panel").innerHTML=`
+      <p class="hint">Все три героя автоматически участвуют в обороне.</p>
+      <div class="grid">
+        ${heroes.map((hero,i)=>`
+          <article class="card">
+            <div class="hero">${hero.icon}</div>
+            <h3>${hero.name}</h3>
+            <p>
+              ${hero.role} · уровень ${s.heroes[i]}<br>
+              ${hero.desc}
+            </p>
+            <button type="button" data-train="${i}"
+              ${fight || s.expedition || s.heroes[i]>=100?"disabled":""}>
+              Обучить · ⚙️ ${fmt(s.heroes[i]*25)}
+            </button>
+          </article>
+        `).join("")}
+      </div>
+    `;
   }
 
   if(tab==="map") {
-    const remaining=s.expedition
-      ?Math.max(0,Math.ceil((s.expedition.ends-Date.now())/1000)):0;
     $("panel").innerHTML=`
-      <div class="card" style="margin-bottom:10px">
+      <div class="card" style="margin-bottom:9px">
         ${s.expedition
-          ?`Отряд вернётся через ${remaining} сек.`
-          :"Выбери маршрут. Награда начисляется после возвращения."}
+          ?`Отряд вернётся через <span id="exp-timer">0</span> сек.`
+          :"Выбери маршрут. Отряд приносит награду после возвращения."}
       </div>
+
       <div class="grid">
         <article class="card">
           <h3>Заброшенный квартал</h3>
-          <p>45 секунд · Награда: 65 дерева, 45 еды, 15 деталей.</p>
-          <button data-exp="block" ${s.expedition||fight?"disabled":""}>
+          <p>
+            45 секунд.<br>
+            Награда: 65 дерева, 45 еды, 15 деталей.
+          </p>
+          <button type="button" data-exp="block"
+            ${s.expedition || fight?"disabled":""}>
             Отправить · 🌾 25
           </button>
         </article>
+
         <article class="card">
           <h3>Старые доки</h3>
-          <p>90 секунд · Награда: 110 дерева, 30 еды, 40 деталей.</p>
-          <button data-exp="dock" ${s.expedition||fight?"disabled":""}>
+          <p>
+            90 секунд.<br>
+            Награда: 110 дерева, 30 еды, 40 деталей.
+          </p>
+          <button type="button" data-exp="dock"
+            ${s.expedition || fight?"disabled":""}>
             Отправить · 🌾 45
           </button>
         </article>
-      </div>`;
+      </div>
+    `;
   }
 
   if(tab==="battle") {
     $("panel").innerHTML=fight
-      ?`<article class="card">
-         <h3>Оборона · волна ${fight.wave}</h3>
-         <p>Периметр: ${Math.max(0,Math.ceil(fight.hp))} / ${fight.max}</p>
-         <div class="progress"><div style="width:${
-           Math.max(0,fight.hp/fight.max*100)}%"></div></div>
-         <p>Сила орды: ${Math.max(0,Math.ceil(fight.enemy))}</p>
-         <button class="primary" data-shoot>Прицельный удар</button>
-       </article>`
-      :`<article class="card">
-         <h3>Приближается волна ${s.wave}</h3>
-         <p>Прочность: ${maxHP()} · Урон в секунду: ${power()}.
-         Защищай убежище и добывай детали для героев.</p>
-         <button class="primary" data-start
-           ${s.expedition?"disabled":""}>Начать оборону</button>
-       </article>`;
+      ?`
+        <article class="card">
+          <h3>Оборона · волна ${fight.wave}</h3>
+
+          <p>
+            Периметр:
+            <span id="fight-hp"></span> / ${fight.max}
+          </p>
+          <div class="progress">
+            <div id="hp-bar"></div>
+          </div>
+
+          <p>Сила орды: <span id="fight-enemy"></span></p>
+          <div class="progress enemy">
+            <div id="enemy-bar"></div>
+          </div>
+
+          <p>Прицельный удар доступен раз в 0,55 секунды.</p>
+
+          <button type="button" class="primary" data-shoot>
+            Прицельный удар
+          </button>
+        </article>
+      `
+      :`
+        <article class="card">
+          <h3>Приближается волна ${s.wave}</h3>
+          <p>
+            Прочность периметра: ${maxHP()}.<br>
+            Урон отряда: ${power()} в секунду.<br>
+            Побеждай заражённых и получай ресурсы.
+          </p>
+
+          <button type="button" class="primary" data-start
+            ${s.expedition?"disabled":""}>
+            Начать оборону
+          </button>
+
+          <p>
+            ${s.expedition
+              ?"Отряд находится в вылазке."
+              :"При поражении теряется до 35 еды. Здания не разрушаются."}
+          </p>
+        </article>
+      `;
   }
+
+  updateLiveUI();
 }
 
-document.addEventListener("click",e=>{
-  const b=e.target.closest("button");
-  if(!b || b.disabled) return;
-  if(b.dataset.tab) { tab=b.dataset.tab; render(); }
-  if(b.dataset.up) upgrade(b.dataset.up);
-  if(b.dataset.train!==undefined) train(Number(b.dataset.train));
-  if(b.dataset.exp) expedition(b.dataset.exp);
-  if(b.hasAttribute("data-start")) startFight();
-  if(b.hasAttribute("data-shoot")) shoot();
+document.addEventListener("click",event=>{
+  const button=event.target.closest("button");
+  if(!button || button.disabled) return;
+
+  if(button.dataset.tab) {
+    tab=button.dataset.tab;
+    render();
+  }
+
+  if(button.dataset.up) upgrade(button.dataset.up);
+
+  if(button.dataset.train!==undefined) {
+    train(Number(button.dataset.train));
+  }
+
+  if(button.dataset.exp) expedition(button.dataset.exp);
+  if(button.hasAttribute("data-start")) startFight();
+  if(button.hasAttribute("data-shoot")) shoot();
 });
 
-/* Оригинальная процедурная изометрическая сцена. */
+/* -------------------------------------------------------
+   РИСОВАННАЯ ИЗОМЕТРИЧЕСКАЯ КАРТА
+------------------------------------------------------- */
+
 const canvas=$("world");
 const ctx=canvas.getContext("2d");
-const iso=(x,y)=>({x:430+(x-y)*67,y:137+(x+y)*35});
+
+const iso=(x,y)=>({
+  x:450+(x-y)*58,
+  y:160+(x+y)*31
+});
+
+let buildingHits=[];
 
 function poly(points,fill,stroke) {
   ctx.beginPath();
-  points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+
+  points.forEach((p,i)=>{
+    if(i) ctx.lineTo(p.x,p.y);
+    else ctx.moveTo(p.x,p.y);
+  });
+
   ctx.closePath();
   ctx.fillStyle=fill;
   ctx.fill();
-  if(stroke) { ctx.strokeStyle=stroke; ctx.stroke(); }
+
+  if(stroke) {
+    ctx.strokeStyle=stroke;
+    ctx.lineWidth=1;
+    ctx.stroke();
+  }
 }
+
+function line(a,b,color,width=1) {
+  ctx.beginPath();
+  ctx.moveTo(a.x,a.y);
+  ctx.lineTo(b.x,b.y);
+  ctx.strokeStyle=color;
+  ctx.lineWidth=width;
+  ctx.stroke();
+}
+
+function circle(x,y,r,color) {
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=color;
+  ctx.fill();
+}
+
 function block(x,y,w,d,h,color) {
-  const a=iso(x,y),b=iso(x+w,y),c=iso(x+w,y+d),e=iso(x,y+d);
+  const a=iso(x,y);
+  const b=iso(x+w,y);
+  const c=iso(x+w,y+d);
+  const e=iso(x,y+d);
   const up=p=>({x:p.x,y:p.y-h});
-  poly([e,c,up(c),up(e)],"#354850","#1b3036");
-  poly([b,c,up(c),up(b)],"#263940","#1b3036");
-  poly([up(a),up(b),up(c),up(e)],color,"#c4c2a044");
+
+  poly([e,c,up(c),up(e)],"#514d42","#242d29");
+  poly([b,c,up(c),up(b)],"#353d39","#202a27");
+  poly([up(a),up(b),up(c),up(e)],color,"#c4baa044");
 }
+
+function glow(x,y,size,color) {
+  const gradient=ctx.createRadialGradient(x,y,0,x,y,size);
+  gradient.addColorStop(0,color);
+  gradient.addColorStop(1,"transparent");
+  ctx.fillStyle=gradient;
+  ctx.fillRect(x-size,y-size,size*2,size*2);
+}
+
 function person(x,y,color,scale=1) {
   ctx.fillStyle="#0005";
-  ctx.beginPath();ctx.ellipse(x,y+7,6*scale,3*scale,0,0,7);ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x,y+5,5*scale,2*scale,0,0,Math.PI*2);
+  ctx.fill();
+
+  line(
+    {x:x-2*scale,y:y+2*scale},
+    {x:x-3*scale,y:y+8*scale},
+    "#252e2a",2*scale
+  );
+
+  line(
+    {x:x+2*scale,y:y+2*scale},
+    {x:x+3*scale,y:y+8*scale},
+    "#252e2a",2*scale
+  );
+
   ctx.fillStyle=color;
-  ctx.fillRect(x-3*scale,y-6*scale,6*scale,12*scale);
-  ctx.fillStyle="#c4af8d";
-  ctx.beginPath();ctx.arc(x,y-10*scale,3*scale,0,7);ctx.fill();
+  ctx.fillRect(x-3*scale,y-7*scale,6*scale,10*scale);
+  circle(x,y-10*scale,3*scale,"#b7a080");
 }
-function draw(ms) {
+
+function pine(x,y,size=1) {
+  const p=iso(x,y);
+
+  ctx.fillStyle="#0003";
+  ctx.beginPath();
+  ctx.ellipse(p.x+9,p.y+5,18*size,7*size,0,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#65513a";
+  ctx.fillRect(p.x-2,p.y-13*size,4,16*size);
+
+  for(let i=0;i<3;i++) {
+    const width=(17-i*4)*size;
+    const base=p.y-(9+i*11)*size;
+
+    poly([
+      {x:p.x-width,y:base},
+      {x:p.x,y:base-29*size},
+      {x:p.x+width,y:base}
+    ],["#243b32","#304c3b","#405942"][i]);
+  }
+}
+
+function warehouse(x,y,w,d,h,roofColor) {
+  const front=iso(x+w,y+d);
+  const left=iso(x,y+d);
+
+  poly([
+    left,
+    front,
+    {x:front.x+29,y:front.y+12},
+    {x:left.x+25,y:left.y+12}
+  ],"#0004");
+
+  block(x,y,w,d,h,"#827761");
+
+  const a=iso(x,y);
+  const b=iso(x+w,y);
+  const c=iso(x+w,y+d);
+  const e=iso(x,y+d);
+
+  [a,b,c,e].forEach(p=>p.y-=h);
+
+  const ridgeA=iso(x,y+d/2);
+  const ridgeB=iso(x+w,y+d/2);
+
+  ridgeA.y-=h+18;
+  ridgeB.y-=h+18;
+
+  poly([a,b,ridgeB,ridgeA],"#38484a","#9c9b7c");
+  poly([ridgeA,ridgeB,c,e],roofColor,"#b3aa8755");
+
+  for(let i=1;i<7;i++) {
+    const f=i/7;
+
+    line(
+      {
+        x:ridgeA.x+(ridgeB.x-ridgeA.x)*f,
+        y:ridgeA.y+(ridgeB.y-ridgeA.y)*f
+      },
+      {
+        x:e.x+(c.x-e.x)*f,
+        y:e.y+(c.y-e.y)*f
+      },
+      "#1a292955"
+    );
+  }
+
+  for(let i=0;i<3;i++) {
+    const p=iso(x+w*(i+1)/4,y+d+.01);
+    p.y-=h*.48;
+
+    ctx.fillStyle="#202d2c";
+    ctx.fillRect(p.x-5,p.y-5,10,10);
+
+    ctx.fillStyle="#e4b66a";
+    ctx.fillRect(p.x-3,p.y-3,6,6);
+
+    glow(p.x,p.y,15,"#edb75b22");
+  }
+
+  const door=iso(x+w,y+d*.5);
+  ctx.fillStyle="#172525";
+  ctx.fillRect(door.x-5,door.y-19,10,18);
+}
+
+function tower(x,y) {
+  const p=iso(x+.16,y+.16);
+
+  // Опоры.
+  const supports=[
+    iso(x,y),
+    iso(x+.32,y),
+    iso(x,y+.32),
+    iso(x+.32,y+.32)
+  ];
+
+  for(const q of supports) {
+    line(q,{x:q.x,y:q.y-51},"#827255",4);
+  }
+
+  line(
+    {x:p.x-15,y:p.y-7},
+    {x:p.x+15,y:p.y-45},
+    "#a08a63",2
+  );
+
+  line(
+    {x:p.x+15,y:p.y-7},
+    {x:p.x-15,y:p.y-45},
+    "#78694f",2
+  );
+
+  ctx.fillStyle="#293a39";
+  ctx.fillRect(p.x-14,p.y-60,28,17);
+  ctx.strokeStyle="#ae9870";
+  ctx.strokeRect(p.x-14,p.y-60,28,17);
+
+  poly([
+    {x:p.x-21,y:p.y-61},
+    {x:p.x,y:p.y-77},
+    {x:p.x+21,y:p.y-61}
+  ],"#8a7760","#bca179");
+
+  glow(p.x,p.y-49,33,"#ffd38633");
+  circle(p.x,p.y-49,3,"#ffe2a0");
+}
+
+function label(id,x,y) {
+  const text=defs[id].short+" · "+s.buildings[id];
+
+  ctx.font="bold 11px system-ui";
+  ctx.textAlign="center";
+
+  const width=ctx.measureText(text).width+20;
+
+  ctx.fillStyle="#0a171cdd";
+  ctx.fillRect(x-width/2,y-14,width,22);
+
+  ctx.strokeStyle="#9f8c5d77";
+  ctx.lineWidth=1;
+  ctx.strokeRect(x-width/2,y-14,width,22);
+
+  ctx.fillStyle="#e9dcb9";
+  ctx.fillText(text,x,y+1);
+
+  return {x,y,width,height:22};
+}
+
+const buildingPositions=[
+  {id:"farm",x:0,y:0},
+  {id:"hq",x:2.2,y:.65},
+  {id:"wall",x:4.35,y:1},
+  {id:"mill",x:0,y:3.15},
+  {id:"barracks",x:3.15,y:3.15}
+].sort((a,b)=>(a.x+a.y)-(b.x+b.y));
+
+function drawScene(ms) {
   const t=ms/1000;
-  const sky=ctx.createLinearGradient(0,0,0,530);
-  sky.addColorStop(0,"#172c3d");
-  sky.addColorStop(.5,"#516366");
-  sky.addColorStop(1,"#102b35");
-  ctx.fillStyle=sky;ctx.fillRect(0,0,900,530);
+  buildingHits=[];
 
-  ctx.fillStyle="#ddaf7044";
-  ctx.beginPath();ctx.arc(725,75,35,0,7);ctx.fill();
+  const background=ctx.createLinearGradient(0,0,0,700);
+  background.addColorStop(0,"#253d47");
+  background.addColorStop(.35,"#536567");
+  background.addColorStop(1,"#142f37");
 
-  // Дальний силуэт города.
-  for(let i=0;i<26;i++){
-    const h=20+(Math.sin(i*9)+1)*25;
-    ctx.fillStyle=i%2?"#182c35":"#233a43";
-    ctx.fillRect(i*38,120-h,27,h);
-  }
+  ctx.fillStyle=background;
+  ctx.fillRect(0,0,900,700);
 
-  // Вода и движущиеся блики.
-  ctx.strokeStyle="#8ab5b52d";ctx.lineWidth=2;
-  for(let i=0;i<48;i++){
-    const x=(i*113+t*9)%960-30;
-    const y=155+(i*47)%365;
-    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+24,y);ctx.stroke();
-  }
+  // Закат.
+  glow(745,89,150,"#f2bb6b44");
+  circle(745,89,28,"#d2b27a88");
 
-  // Остров, плитка и дороги.
-  for(let y=-1;y<6;y++){
-    for(let x=-1;x<6;x++){
-      const road=x===1||y===2;
-      poly([iso(x,y),iso(x+1,y),iso(x+1,y+1),iso(x,y+1)],
-        road?"#8a846d":((x+y)%2?"#536255":"#5b6a5b"),
-        "#203b3433");
+  // Дальний разрушенный город.
+  for(let i=0;i<35;i++) {
+    const h=18+(Math.sin(i*8.3)+1)*24;
+
+    ctx.fillStyle=i%2?"#263b42":"#31454a";
+    ctx.fillRect(i*28,148-h,22,h);
+
+    if(i%4===0) {
+      ctx.fillRect(i*28+9,139-h,3,12);
     }
   }
 
-  // Деревянный причал.
-  for(let i=0;i<4;i++) block(5.7,3+i*.3,1.15,.22,6,"#8d7457");
+  // Блики на воде.
+  for(let i=0;i<85;i++) {
+    const x=(i*137+t*7)%970-35;
+    const y=170+(i*61)%530;
 
-  Object.entries(defs)
-    .sort((a,b)=>(a[1].x+a[1].y)-(b[1].x+b[1].y))
-    .forEach(([id,d])=>{
-      const level=s.buildings[id];
-      const h=id==="wall"?24:28+level*4;
-      block(d.x,d.y,.82,.82,h,d.color);
-      const p=iso(d.x+.4,d.y+.4);
+    line(
+      {x,y},
+      {x:x+13+(i%4)*8,y},
+      "#8bb4b31a"
+    );
+  }
 
-      if(id==="hq") {
-        ctx.strokeStyle="#d4bc83";ctx.lineWidth=2;
-        ctx.beginPath();ctx.moveTo(p.x,p.y-h);
-        ctx.lineTo(p.x,p.y-h-35);ctx.stroke();
-        poly([
-          {x:p.x,y:p.y-h-35},
-          {x:p.x+22,y:p.y-h-29},
-          {x:p.x,y:p.y-h-21}
-        ],"#df9563");
+  // Остров, дороги и трава.
+  for(let y=-1;y<7;y++) {
+    for(let x=-1;x<7;x++) {
+      const road=x===1 || y===2 || y===5;
+      const shade=((x*7+y*3)%3+3)%3;
+
+      poly([
+        iso(x,y),
+        iso(x+1,y),
+        iso(x+1,y+1),
+        iso(x,y+1)
+      ],
+      road?"#887b61":["#515a44","#596149","#60664d"][shade],
+      "#253a3022");
+
+      if(!road) {
+        for(let k=0;k<5;k++) {
+          const p=iso(x+.12+k*.17,y+.2+(k%3)*.21);
+
+          line(
+            p,
+            {x:p.x+3,y:p.y-3},
+            "#9c9b6655"
+          );
+        }
+      } else {
+        const p=iso(x+.35,y+.35);
+        line(p,{x:p.x+14,y:p.y+7},"#c5b58c22");
+      }
+    }
+  }
+
+  // Задняя ограда.
+  for(let i=-1;i<7;i++) {
+    block(-1,i,.12,.92,18,"#8f8466");
+    block(i,-1,.92,.12,18,"#8f8466");
+  }
+
+  tower(-.85,-.85);
+  tower(5.9,-.85);
+
+  // Деревья.
+  [
+    [-.5,.2],[-.5,1.1],[-.4,3.2],[-.4,4.2],
+    [.3,-.5],[1.1,-.5],[3.5,-.5],[4.5,-.5],
+    [5.9,.5],[5.9,1.5],[5.9,3.5]
+  ].forEach((p,i)=>{
+    pine(p[0],p[1],.75+(i%3)*.12);
+  });
+
+  // Жилые дома.
+  warehouse(2.2,-.25,.68,.7,27,"#8a6250");
+  warehouse(3.15,-.25,.68,.7,29,"#737c70");
+  warehouse(4.1,-.25,.68,.7,25,"#8f7757");
+
+  const labels=[];
+
+  for(const building of buildingPositions) {
+    const b=building;
+    const level=s.buildings[b.id];
+
+    if(b.id==="farm") {
+      // Две теплицы.
+      warehouse(b.x,b.y,.36,1.3,15,"#80a59a");
+      warehouse(b.x+.5,b.y,.36,1.3,15,"#9fb4a1");
+
+      for(let i=0;i<4;i++) {
+        const p=iso(b.x+.22,b.y+.2+i*.27);
+        circle(p.x,p.y-10,3,"#84ab59");
       }
 
-      ctx.textAlign="center";ctx.font="bold 12px system-ui";
-      ctx.fillStyle="#07171dc9";
-      ctx.fillRect(p.x-53,p.y-h-23,106,20);
-      ctx.fillStyle="#edf0db";
-      ctx.fillText(d.short+" "+level,p.x,p.y-h-9);
+      for(let i=0;i<3;i++) {
+        block(b.x,b.y+1.42+i*.13,.85,.07,2,"#716044");
+      }
+    }
+
+    if(b.id==="hq") {
+      warehouse(
+        b.x,b.y,1.1,1.05,
+        40+Math.min(level,10)*2,
+        "#9b7252"
+      );
+
+      block(b.x+.18,b.y+.1,.36,.35,67,"#8e8061");
+
+      const p=iso(b.x+.35,b.y+.25);
+
+      line(
+        {x:p.x,y:p.y-65},
+        {x:p.x,y:p.y-101},
+        "#d2b785",2
+      );
+
+      poly([
+        {x:p.x,y:p.y-101},
+        {x:p.x+24,y:p.y-97+Math.sin(t*3)*2},
+        {x:p.x+21,y:p.y-84},
+        {x:p.x,y:p.y-87}
+      ],"#c4824e");
+
+      circle(p.x+9,p.y-94,2,"#f1d6a0");
+    }
+
+    if(b.id==="wall") {
+      tower(b.x,b.y);
+      block(b.x+.4,b.y,.48,.48,18,"#807f66");
+
+      const p=iso(b.x+.7,b.y+.2);
+
+      line(
+        {x:p.x,y:p.y-18},
+        {x:p.x,y:p.y-57},
+        "#c0b598",2
+      );
+
+      line(
+        {x:p.x-12,y:p.y-44},
+        {x:p.x+12,y:p.y-44},
+        "#bcb395",2
+      );
+
+      circle(p.x,p.y-57,2,"#d69b6c");
+    }
+
+    if(b.id==="mill") {
+      warehouse(b.x,b.y,.86,1,31,"#826c51");
+
+      for(let i=0;i<5;i++) {
+        block(b.x+.95,b.y+i*.16,.42,.12,7,"#b19364");
+      }
+
+      const p=iso(b.x+.2,b.y+.4);
+
+      ctx.fillStyle="#444b42";
+      ctx.fillRect(p.x,p.y-61,9,28);
+
+      for(let i=0;i<4;i++) {
+        const drift=(t*9+i*12)%55;
+
+        circle(
+          p.x+5+drift*.35,
+          p.y-62-drift,
+          5+drift*.13,
+          "#b9b3a01a"
+        );
+      }
+    }
+
+    if(b.id==="barracks") {
+      warehouse(b.x,b.y,1.2,.9,32,"#637a6e");
+      block(b.x+.2,b.y+1.08,.32,.26,11,"#a5956b");
+      block(b.x+.65,b.y+1.08,.32,.26,11,"#8c835e");
+
+      const p=iso(b.x+1.25,b.y+.4);
+      line(p,{x:p.x,y:p.y-31},"#c0ab7c",2);
+
+      poly([
+        {x:p.x,y:p.y-31},
+        {x:p.x+15,y:p.y-27},
+        {x:p.x,y:p.y-19}
+      ],"#9c7151");
+    }
+
+    const p=iso(b.x+.5,b.y+.6);
+
+    buildingHits.push({
+      id:b.id,
+      x:p.x,
+      y:p.y-20
     });
 
-  // Передняя линия периметра.
-  for(let i=-1;i<6;i++) block(i,5.6,.88,.14,18,"#b4a07b");
+    labels.push({
+      id:b.id,
+      x:p.x,
+      y:p.y+32
+    });
+  }
 
-  // Мирные жители.
-  for(let i=0;i<9;i++){
-    const p=iso(1.4,((t*.15+i*.59)%5)-.5);
-    person(p.x,p.y,i%2?"#d8a569":"#809fac",.8);
+  // Жители ходят по главной дороге.
+  for(let i=0;i<15;i++) {
+    const p=iso(1.45,((t*.12+i*.39)%6)-.3);
+    person(p.x,p.y,i%3===0?"#c59a63":"#798d85",.8);
+  }
+
+  // Защитники возле казарм.
+  for(let i=0;i<5;i++) {
+    const p=iso(2+i*.52,4.65);
+    person(p.x,p.y,"#ac9e76",.9);
+  }
+
+  // Причал.
+  for(let i=0;i<10;i++) {
+    block(6.2,2.8+i*.16,1.8,.13,8,"#9b8560");
+  }
+
+  for(let i=0;i<4;i++) {
+    block(6.25+i*.5,2.8,.08,.08,22,"#6f634f");
+  }
+
+  // Катер.
+  const boat=iso(7.9,3.7);
+  const bob=Math.sin(t*1.8)*2;
+  const bx=boat.x;
+  const by=boat.y+bob;
+
+  poly([
+    {x:bx-17,y:by-33},
+    {x:bx+31,y:by-12},
+    {x:bx+10,y:by+38},
+    {x:bx-26,y:by+15}
+  ],"#233a3e","#939b88");
+
+  poly([
+    {x:bx-12,y:by-24},
+    {x:bx+21,y:by-10},
+    {x:bx+7,y:by+24},
+    {x:bx-18,y:by+10}
+  ],"#9a8f70");
+
+  ctx.fillStyle="#b9b69a";
+  ctx.fillRect(bx-8,by-13,21,23);
+
+  ctx.fillStyle="#314e57";
+  ctx.fillRect(bx-5,by-10,15,8);
+
+  line(
+    {x:bx+2,y:by-10},
+    {x:bx+2,y:by-51},
+    "#cfbea0",2
+  );
+
+  // Передний периметр.
+  for(let i=-1;i<7;i++) {
+    if(i===2 || i===3) continue;
+
+    block(i,6.05,.93,.16,23,"#b1a07c");
+    block(i,6.05,.12,.2,30,"#c0ac83");
+  }
+
+  tower(-.8,5.8);
+  tower(5.9,5.8);
+
+  // Ворота.
+  const gateA=iso(2,6.05);
+  const gateB=iso(4,6.05);
+
+  line(
+    {x:gateA.x,y:gateA.y-20},
+    {x:gateB.x,y:gateB.y-20},
+    "#675845",6
+  );
+
+  for(let i=0;i<9;i++) {
+    const p=iso(2+i*.24,6.05);
+
+    line(
+      {x:p.x,y:p.y},
+      {x:p.x,y:p.y-27},
+      "#b5a07a",3
+    );
+  }
+
+  // Фонари.
+  [[1.1,1.8],[1.1,4.8],[4.7,2.2]].forEach(([x,y])=>{
+    const p=iso(x,y);
+
+    line(p,{x:p.x,y:p.y-35},"#424c43",3);
+    glow(p.x,p.y-34,35,"#f6bc5140");
+    circle(p.x,p.y-34,3,"#ffe4ac");
+  });
+
+  // Затемнение по краям.
+  const vignette=ctx.createRadialGradient(
+    450,340,140,
+    450,340,530
+  );
+
+  vignette.addColorStop(0,"transparent");
+  vignette.addColorStop(1,"#020b125e");
+
+  ctx.fillStyle=vignette;
+  ctx.fillRect(0,0,900,700);
+
+  // Названия зданий.
+  for(const b of labels) {
+    const box=label(b.id,b.x,b.y);
+    const hit=buildingHits.find(item=>item.id===b.id);
+    if(hit) hit.label=box;
   }
 
   if(fight) {
-    $("badge").textContent="ТРЕВОГА · ВОЛНА "+fight.wave;
-    const count=Math.max(1,Math.ceil(fight.enemy/fight.enemyMax*22));
-    for(let i=0;i<count;i++){
-      const x=130+i*29;
-      const y=465+Math.sin(t*2+i)*7+(i%3)*13;
-      person(x,y,"#74956e",1.25);
+    $("badge").textContent="⚠ ТРЕВОГА · ВОЛНА "+fight.wave;
+
+    const count=Math.max(
+      1,
+      Math.ceil(fight.enemy/fight.enemyMax*25)
+    );
+
+    for(let i=0;i<count;i++) {
+      person(
+        160+i*22,
+        625+(i%3)*13+Math.sin(t*2+i)*3,
+        i%2?"#6c7951":"#8a7a60",
+        1.1
+      );
     }
-    for(let i=0;i<6;i++){
-      const p=iso(i-.5,5.2);
-      person(p.x,p.y,"#c2a277");
-      if(Math.sin(t*15+i)>0.7 || fight.flash>0){
-        ctx.strokeStyle="#ffdc84";ctx.lineWidth=2;
-        ctx.beginPath();ctx.moveTo(p.x,p.y-6);
-        ctx.lineTo(130+((i*97+t*50)%600),473);
-        ctx.stroke();
+
+    for(let i=0;i<6;i++) {
+      const p=iso(i-.2,5.75);
+      person(p.x,p.y,"#b4a17a");
+
+      if(Math.sin(t*14+i)>.75 || fight.flash>0) {
+        line(
+          {x:p.x,y:p.y-7},
+          {x:170+(i*83+t*35)%500,y:635},
+          "#ffd58b99",1.5
+        );
+
+        glow(p.x,p.y-7,13,"#ffcd6c88");
       }
     }
-    ctx.fillStyle="#f5905b";
-    ctx.textAlign="right";ctx.font="bold 15px system-ui";
-    ctx.fillText("ПЕРИМЕТР "+Math.max(0,Math.ceil(fight.hp)),874,34);
   } else {
-    $("badge").textContent="СЕКТОР 07 · ПРИБРЕЖНОЕ УБЕЖИЩЕ";
+    $("badge").textContent="СЕКТОР 07 · ПОСЛЕДНИЙ ПОРТ";
   }
 
-  requestAnimationFrame(draw);
+  ctx.textAlign="right";
+  ctx.font="10px system-ui";
+  ctx.fillStyle="#d4c8aa99";
+
+  ctx.fillText(
+    fight
+      ?"ОТКРОЙ «ОБОРОНУ», ЧТОБЫ ПОМОЧЬ ОТРЯДУ"
+      :"НАЖМИ НА ЗДАНИЕ ДЛЯ УЛУЧШЕНИЯ",
+    875,682
+  );
 }
 
-setInterval(()=>{
+/* Нажатие на здание открывает карточку.
+   Ресурсы списываются только после нажатия «Улучшить». */
+
+canvas.addEventListener("click",event=>{
+  const rect=canvas.getBoundingClientRect();
+  const x=(event.clientX-rect.left)*canvas.width/rect.width;
+  const y=(event.clientY-rect.top)*canvas.height/rect.height;
+
+  let hit=buildingHits.find(b=>{
+    const box=b.label;
+
+    return box &&
+      x>=box.x-box.width/2 &&
+      x<=box.x+box.width/2 &&
+      y>=box.y-14 &&
+      y<=box.y+8;
+  });
+
+  if(!hit) {
+    const nearest=buildingHits
+      .map(b=>({
+        ...b,
+        distance:Math.hypot(b.x-x,b.y-y)
+      }))
+      .sort((a,b)=>a.distance-b.distance)[0];
+
+    if(nearest && nearest.distance<=62) hit=nearest;
+  }
+
+  if(!hit) return;
+
+  tab="base";
+  render();
+
+  const card=document
+    .querySelector(`[data-up="${hit.id}"]`)
+    ?.closest(".card");
+
+  if(card) {
+    card.scrollIntoView({
+      behavior:"smooth",
+      block:"center"
+    });
+
+    if(card.animate) {
+      card.animate([
+        {outline:"2px solid #efca83"},
+        {outline:"2px solid transparent"}
+      ],{duration:1400});
+    }
+  }
+
+  say(defs[hit.id].name+": улучшение доступно в карточке здания.");
+});
+
+/* -------------------------------------------------------
+   ИГРОВОЙ ЦИКЛ
+------------------------------------------------------- */
+
+let lastTick=Date.now();
+let lastSaved=Date.now();
+
+function tick() {
   const now=Date.now();
   const dt=Math.max(0,(now-lastTick)/1000);
   lastTick=now;
 
   produce(Math.min(dt,28800));
-  checkExpedition();
+
+  if(checkExpedition()) render();
 
   if(fight) {
-    // В фоне бой приостанавливается: не проигрываем из-за свёрнутого окна.
     const combatDt=document.hidden?0:Math.min(dt,.5);
+
     fight.enemy-=power()*combatDt;
     fight.hp-=(9+fight.wave*4)*combatDt;
     fight.flash=Math.max(0,fight.flash-combatDt);
+
     resolveFight();
   }
 
-  render();
-  if(now-lastSaved>5000) { save(); lastSaved=now; }
-},250);
+  updateLiveUI();
+
+  if(now-lastSaved>=5000) {
+    save();
+    lastSaved=now;
+  }
+}
+
+setInterval(tick,250);
+
+/* Рисуем до 30 кадров в секунду, чтобы снизить нагрузку. */
+let previousFrame=-Infinity;
+
+function frame(ms) {
+  if(!document.hidden && ms-previousFrame>=1000/30) {
+    drawScene(ms);
+    previousFrame=ms;
+  }
+
+  requestAnimationFrame(frame);
+}
 
 document.addEventListener("visibilitychange",()=>{
-  if(document.hidden) save();
-});
-window.addEventListener("pagehide",save);
+  const now=Date.now();
 
-checkExpedition();
+  // Учитываем время до смены видимости без симуляции фонового боя.
+  produce(Math.min(28800,Math.max(0,(now-lastTick)/1000)));
+  lastTick=now;
+
+  if(document.hidden) {
+    save();
+  } else {
+    if(checkExpedition()) render();
+    updateLiveUI();
+  }
+});
+
+window.addEventListener("pagehide",()=>{
+  const now=Date.now();
+  produce(Math.min(28800,Math.max(0,(now-lastTick)/1000)));
+  lastTick=now;
+  save();
+});
+
+const expeditionFinished=checkExpedition();
+
+if(!expeditionFinished && offlineSeconds>=60) {
+  say(
+    "Пока тебя не было, база произвела "+
+    fmt(offlineSeconds*s.buildings.farm*.45)+
+    " еды и "+
+    fmt(offlineSeconds*s.buildings.mill*.35)+
+    " дерева."
+  );
+}
+
 render();
-requestAnimationFrame(draw);
+save();
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
