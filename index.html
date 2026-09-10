@@ -3,84 +3,89 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#0b0e11">
-<title>The Last Port - TWD Survivors Edition</title>
+<meta name="theme-color" content="#121517">
+<title>The Last Port - TWD Survivors HD Engine</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-/* ================= ТЕМНЫЙ ПОСТАПОКАЛИПТИЧЕСКИЙ UI ================= */
+/* ================= TWD SURVIVORS СТИЛЬ ИНТЕРФЕЙСА ================= */
 :root {
   color-scheme: dark;
-  --text: #e2e8f0; --muted: #8292a2; --gold: #f4b136;
-  --bg-main: #0b0e11; --bg-card: #181d23; --border: #2a333d; --height: 100dvh;
+  --text: #f3f4f6; --muted: #9ca3af; --gold: #f59e0b;
+  --bg-main: #0c0e10; --bg-card: #161a1e; --border: #2d353e; --height: 100dvh;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); }
-button { font: inherit; cursor: pointer; border: none; outline: none; transition: transform 0.1s; }
+button { font: inherit; cursor: pointer; border: none; outline: none; transition: transform 0.1s, background-color 0.2s; }
 button:active { transform: scale(0.96); }
 button:disabled { opacity: 0.45; filter: grayscale(1); pointer-events: none; }
 [hidden] { display: none !important; }
 
-/* ================= СЛОИ И КАРТА ================= */
+/* ================= ИГРОВОЙ ЭКРАН И CANVAS ================= */
 main { position: relative; width: 100%; height: var(--height); overflow: hidden; }
-.scene { position: absolute; inset: 0; z-index: 1; background: #07090b; }
+.scene { position: absolute; inset: 0; z-index: 1; background: #080a0c; }
 canvas { display: block; touch-action: none; }
 #camera-layer { position: absolute; inset: 0; z-index: 2; touch-action: none; }
-.vignette { position: absolute; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 120px rgba(0,0,0,0.92); }
 
-/* ================= ВЕРХНИЙ HUD ================= */
-.ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 10px); }
-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 15px; pointer-events: auto; }
+/* ================= UI HUD В СТИЛЕ TWD SURVIVORS ================= */
+.ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 8px); }
+header { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 12px; pointer-events: auto; }
 
-.profile-badge { display: flex; align-items: center; gap: 10px; background: rgba(12, 15, 18, 0.88); border: 1px solid var(--gold); border-radius: 40px; padding: 4px 16px 4px 4px; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.7); }
-.profile-avatar { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; }
+/* Профиль Героя Слева Вверху */
+.profile-badge { display: flex; align-items: center; gap: 8px; background: rgba(15, 18, 22, 0.9); border: 1px solid #b48530; border-radius: 8px; padding: 3px 12px 3px 3px; backdrop-filter: blur(6px); box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+.profile-avatar { width: 42px; height: 42px; border-radius: 6px; border: 1px solid var(--gold); object-fit: cover; }
 .profile-info { display: flex; flex-direction: column; }
-.profile-level { font-size: 9px; color: var(--gold); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-.profile-power { font-size: 16px; font-weight: 900; margin-top: -2px; }
+.profile-level { font-size: 9px; color: #fbbf24; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+.profile-power { font-size: 15px; font-weight: 900; color: #fff; margin-top: -2px; text-shadow: 0 1px 3px #000; }
 
-.resources { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.res-item { background: rgba(12, 15, 18, 0.88); border: 1px solid var(--border); border-radius: 12px; padding: 6px 12px; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); backdrop-filter: blur(8px); }
-.res-food { color: #86efac; } .res-wood { color: #fde047; } .res-parts { color: #93c5fd; } .res-wave { color: #f43f5e; }
+/* Верхний Бар Ресурсов */
+.resources { display: flex; gap: 6px; }
+.res-item { background: rgba(15, 18, 22, 0.9); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.6); backdrop-filter: blur(6px); }
+.res-food { color: #86efac; border-color: rgba(134, 239, 172, 0.3); } 
+.res-wood { color: #fde047; border-color: rgba(253, 224, 71, 0.3); } 
+.res-parts { color: #93c5fd; border-color: rgba(147, 197, 253, 0.3); } 
 
-#chapter-strip { align-self: flex-start; margin: 4px 15px; background: rgba(12, 15, 18, 0.88); border: 1px solid var(--border); border-radius: 12px; padding: 8px 15px 8px 8px; display: flex; align-items: center; gap: 10px; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.6); backdrop-filter: blur(8px); }
-.chapter-avatar { width: 36px; height: 36px; border-radius: 8px; background: #202730; display: grid; place-items: center; font-size: 18px; color: var(--gold); }
-.chapter-copy small { display: block; font-size: 10px; color: var(--muted); }
-.chapter-copy strong { font-size: 13px; color: #fff; }
+/* Задание / Глава (Левый нижний баннер TWD-style) */
+#chapter-strip { align-self: flex-start; margin: 4px 12px; background: linear-gradient(90deg, rgba(20, 24, 30, 0.95), rgba(12, 15, 18, 0.8)); border-left: 3px solid var(--gold); border-radius: 4px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.7); backdrop-filter: blur(6px); }
+.chapter-avatar { width: 28px; height: 28px; border-radius: 4px; background: #262c33; display: grid; place-items: center; font-size: 14px; color: var(--gold); }
+.chapter-copy small { display: block; font-size: 9px; color: var(--muted); text-transform: uppercase; }
+.chapter-copy strong { font-size: 12px; color: #f3f4f6; }
 
-.camera-controls { position: absolute; right: 15px; top: 40%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
-.camera-controls button { width: 44px; height: 44px; border-radius: 50%; background: rgba(24, 29, 35, 0.9); border: 1px solid var(--border); color: #fff; font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
+/* Кнопки Навигации Камеры */
+.camera-controls { position: absolute; right: 12px; top: 45%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
+.camera-controls button { width: 40px; height: 40px; border-radius: 8px; background: rgba(22, 26, 32, 0.9); border: 1px solid var(--border); color: #fff; font-size: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.7); backdrop-filter: blur(6px); }
 .camera-controls .primary { border-color: var(--gold); color: var(--gold); }
 
-/* ================= НИЖНЯЯ ПАНЕЛЬ ================= */
-#dock { margin-top: auto; background: rgba(14, 17, 21, 0.96); backdrop-filter: blur(12px); border-top-left-radius: 24px; border-top-right-radius: 24px; pointer-events: auto; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.95); height: 42dvh; transition: 0.3s; z-index: 100; border-top: 1px solid var(--border); }
-#dock[data-size="map"] { height: auto; padding-bottom: env(safe-area-inset-bottom, 20px); }
+/* ================= НИЖНЯЯ ПАНЕЛЬ С КАРТОЧКАМИ ================= */
+#dock { margin-top: auto; background: rgba(14, 17, 21, 0.96); backdrop-filter: blur(12px); border-top-left-radius: 16px; border-top-right-radius: 16px; pointer-events: auto; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); height: 42dvh; transition: height 0.3s; z-index: 100; border-top: 1px solid var(--border); }
+#dock[data-size="map"] { height: auto; padding-bottom: env(safe-area-inset-bottom, 15px); }
 
-.toolbar { display: flex; gap: 8px; padding: 14px; overflow-x: auto; scrollbar-width: none; }
+.toolbar { display: flex; gap: 6px; padding: 10px 12px 6px; overflow-x: auto; scrollbar-width: none; }
 .toolbar::-webkit-scrollbar { display: none; }
-.toolbar button { background: var(--bg-card); border: 1px solid var(--border); color: var(--muted); padding: 10px 16px; border-radius: 12px; font-size: 12px; font-weight: bold; white-space: nowrap; }
-.toolbar button.active { background: #28313b; color: #fff; border-color: #3b4754; }
-.size-btn { width: 40px; padding: 0 !important; display: grid; place-items: center; font-size: 18px; }
+.toolbar button { background: var(--bg-card); border: 1px solid var(--border); color: var(--muted); padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; white-space: nowrap; }
+.toolbar button.active { background: #28313b; color: #fff; border-color: var(--gold); }
+.size-btn { width: 36px; padding: 0 !important; display: grid; place-items: center; font-size: 16px; }
 
-#panel { flex: 1; overflow-y: auto; padding: 0 14px 14px; scrollbar-width: none; }
+#panel { flex: 1; overflow-y: auto; padding: 6px 12px 12px; scrollbar-width: none; }
 #panel::-webkit-scrollbar { display: none; }
 
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
-.card.selected { border-color: var(--gold); background: #222932; box-shadow: 0 0 20px rgba(244,177,54,0.15); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.card.selected { border-color: var(--gold); background: #202630; box-shadow: 0 0 15px rgba(245,158,11,0.15); }
 
-.card-title { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 2px; }
-.card-lvl { font-size: 10px; color: var(--gold); background: rgba(244, 177, 54, 0.15); padding: 3px 8px; border-radius: 6px; }
-.card p { font-size: 11px; color: var(--muted); line-height: 1.4; margin: 0; flex: 1; }
+.card-title { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: #fff; }
+.card-lvl { font-size: 10px; color: var(--gold); background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 4px; }
+.card p { font-size: 10px; color: var(--muted); line-height: 1.3; margin: 0; flex: 1; }
 
-.card > button { background: transparent; border: 1px solid var(--gold); color: var(--gold); padding: 10px; border-radius: 10px; font-weight: bold; font-size: 12px; margin-top: auto; }
-.card > button.primary { background: var(--gold); color: #000; }
+.card > button { background: linear-gradient(180deg, #d97706, #b45309); border: none; color: #fff; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 11px; margin-top: auto; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.card > button.primary { background: linear-gradient(180deg, #f59e0b, #d97706); }
 
-nav { display: flex; justify-content: space-around; background: #080a0c; padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); flex-shrink: 0; }
-nav button { background: none; color: #52606d; font-size: 10px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+nav { display: flex; justify-content: space-around; background: #090b0d; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); flex-shrink: 0; }
+nav button { background: none; color: #6b7280; font-size: 9px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 nav button.active { color: var(--gold); }
-nav button b { font-size: 20px; }
+nav button b { font-size: 18px; }
 
-/* Летающие частицы ресурсов */
-.fly-res { position: absolute; z-index: 9999; font-weight: 900; font-size: 15px; color: #fff; text-shadow: 0 2px 6px #000; pointer-events: none; transition: 0.8s cubic-bezier(0.2, 1, 0.3, 1); }
+/* Летающий сбор ресурса */
+.fly-res { position: absolute; z-index: 9999; font-weight: 900; font-size: 14px; color: #fbbf24; text-shadow: 0 2px 4px #000; pointer-events: none; transition: 0.8s cubic-bezier(0.2, 1, 0.3, 1); }
 </style>
 </head>
 <body>
@@ -88,7 +93,6 @@ nav button b { font-size: 20px; }
   <!-- CANVAS СЛОЙ -->
   <div class="scene">
     <canvas id="world"></canvas>
-    <div class="vignette"></div>
     <div id="camera-layer"></div>
   </div>
 
@@ -96,24 +100,26 @@ nav button b { font-size: 20px; }
   <div class="ui-layer">
     <header>
       <div class="profile-badge">
-        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80" class="profile-avatar">
+        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80" class="profile-avatar" alt="Avatar">
         <div class="profile-info">
-          <span class="profile-level">База ур. <span id="hq-lvl">1</span></span>
-          <span class="profile-power">⚔ <span id="power">57</span></span>
+          <span class="profile-level">Ратуша Ур. <span id="hq-lvl">1</span></span>
+          <span class="profile-power">⚔ <span id="power">14,368</span></span>
         </div>
       </div>
       
       <div class="resources">
-        <div class="res-item res-food" id="btn-food">🌾 <span id="food">0</span></div>
+        <div class="res-item res-food" id="btn-food">🍅 <span id="food">0</span></div>
         <div class="res-item res-wood" id="btn-wood">🪵 <span id="wood">0</span></div>
         <div class="res-item res-parts">⚙ <span id="parts">120</span></div>
-        <div class="res-item res-wave">☣ <span id="wave">1</span></div>
       </div>
     </header>
 
     <button id="chapter-strip" data-action="campaign">
-      <div class="chapter-avatar">⌖</div>
-      <div class="chapter-copy"><small>Глава 1</small><strong>Сигнал в темноте</strong></div>
+      <div class="chapter-avatar">📋</div>
+      <div class="chapter-copy">
+        <small id="chapter-number">Глава 1: Новая жизнь</small>
+        <strong id="chapter-title">[0/1] Отремонтируйте ратушу</strong>
+      </div>
     </button>
 
     <div class="camera-controls">
@@ -126,9 +132,10 @@ nav button b { font-size: 20px; }
     <!-- DOCK ПАНЕЛЬ -->
     <section id="dock" data-size="normal">
       <div class="toolbar">
-        <button class="active">♙ Жители</button>
-        <button>⚖ Торговля</button>
-        <button>⚙ Развитие</button>
+        <button class="active">♙ Выжившие</button>
+        <button>⚖ Рынок</button>
+        <button>⚙ Технологии</button>
+        <button>☷ Журнал</button>
         <button class="size-btn" data-action="collapse">▾</button>
       </div>
       
@@ -138,7 +145,7 @@ nav button b { font-size: 20px; }
         <button data-action="tab" data-id="base" class="active"><b>⌂</b>База</button>
         <button data-action="tab" data-id="territory"><b>▧</b>Земли</button>
         <button data-action="tab" data-id="heroes"><b>★</b>Герои</button>
-        <button data-action="tab" data-id="army"><b>⚑</b>Войска</button>
+        <button data-action="tab" data-id="army"><b>⚑</b>Армия</button>
         <button data-action="tab" data-id="map"><b>⌖</b>Карта</button>
         <button data-action="tab" data-id="battle"><b>⚔</b>Оборона</button>
       </nav>
@@ -158,63 +165,38 @@ nav button b { font-size: 20px; }
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat("ru-RU").format(Math.floor(n||0));
 
-/* ================= 1. БАЗА ДАННЫХ И ИГРОВАЯ ЛОГИКА ================= */
+/* ================= 1. БАЗА ДАННЫХ И СОСТОЯНИЕ ================= */
 const BUILD = {
- hq: {name:"Штаб", x:2, y:2, w:1.8, d:1.8},
- farm: {name:"Теплицы", x:0, y:2, w:1.8, d:1.8},
- mill: {name:"Лесопилка", x:2, y:0, w:1.8, d:1.8},
- barracks: {name:"Казармы", x:4, y:2, w:1.8, d:1.8},
- wall: {name:"Вышка", x:2, y:4, w:1.2, d:1.2}
+ hq: {name:"Ратуша", x:2, y:2, w:2, d:2},
+ farm: {name:"Ферма", x:0, y:2, w:1.5, d:1.5},
+ mill: {name:"Лесопилка", x:2, y:0, w:1.5, d:1.5},
+ barracks: {name:"Казармы", x:4, y:2, w:1.5, d:1.5},
+ wall: {name:"Вышка Обороны", x:2, y:4, w:1.2, d:1.2}
 };
+
 const TERRITORY = {
- grove: {name:"Заросший сквер", x:-1, y:-1, cost:30},
- scrapyard: {name:"Свалка машин", x:1, y:-1, cost:80},
- garden: {name:"Старые сады", x:-1, y:1, cost:110}
+ grove: {name:"Заброшенный квартал", x:-1, y:-1, cost:30},
+ scrapyard: {name:"Свалка техники", x:1, y:-1, cost:80},
+ garden: {name:"Фруктовый сад", x:-1, y:1, cost:110}
 };
 
 let s = {
-  food: 5900, wood: 4300, parts: 120, wave: 1,
+  food: 55, wood: 10, parts: 120, wave: 1,
   buildings: { hq:1, farm:1, mill:1, barracks:1, wall:1 },
   territory: { cleared: [] }
 };
 
-let readyToCollect = { farm: false, mill: false };
-setInterval(() => {
-  if(s.buildings.farm) readyToCollect.farm = true;
-  if(s.buildings.mill) readyToCollect.mill = true;
-}, 5000); 
-
+let readyToCollect = { farm: true, mill: true };
 let tab="base", dockSize="normal", selectedObj=null;
 
-// NPC Выжившие (Ходят по базе)
-const npcs = Array.from({length: 6}, () => ({
-  x: 1 + Math.random()*3, y: 1 + Math.random()*3,
-  tx: 1 + Math.random()*3, ty: 1 + Math.random()*3,
-  speed: 0.004 + Math.random()*0.004,
-  shirtColor: ["#4a5568", "#2b6cb0", "#2f855a", "#742a2a"][Math.floor(Math.random()*4)]
-}));
-
-// Зомби (Бродят за забором в тумане)
-const zombies = Array.from({length: 8}, () => ({
-  x: (Math.random() > 0.5 ? -2 : 6) + Math.random()*2,
-  y: (Math.random() > 0.5 ? -2 : 6) + Math.random()*2,
-  tx: 0, ty: 0,
-  speed: 0.002 + Math.random()*0.002
-}));
-
-function pay(c){
-  if((c.food||0)>s.food || (c.wood||0)>s.wood) return false;
-  s.food-=(c.food||0); s.wood-=(c.wood||0); return true;
-}
-
-/* ================= 2. РЕНДЕР UI ================= */
+/* ================= 2. УПРАВЛЕНИЕ UI ================= */
 function renderBase(){
   return `<div class="grid">${Object.entries(BUILD).map(([id,b])=>{
       const l=s.buildings[id];
       return `<article class="card ${selectedObj===id?"selected":""}">
-        <div class="card-title"><span>${b.name}</span><span class="card-lvl">${l?`Ур. ${l}`:"Строится"}</span></div>
-        <p>${id==="farm"?"Добыча продуктов.":id==="mill"?"Добыча древесины.":"Центр управления."}</p>
-        <button data-action="build" data-id="${id}">Улучшить (🪵 ${l*50})</button></article>`;
+        <div class="card-title"><span>${b.name}</span><span class="card-lvl">${l?`Ур. ${l}`:"Разрушено"}</span></div>
+        <p>${id==="hq"?"Главное здание поселения.":id==="farm"?"Производство томатов.":"Добыча древесины."}</p>
+        <button class="primary" data-action="build" data-id="${id}">${l?"Улучшить":"Отремонтировать"} (🪵 ${l*50 || 10})</button></article>`;
   }).join("")}</div>`;
 }
 
@@ -223,8 +205,8 @@ function renderTerritory(){
       const done = s.territory.cleared.includes(id);
       return `<article class="card ${done?"selected":""}">
         <div class="card-title"><span>${p.name}</span></div>
-        <p>${done?"Безопасная зона.":"Сектор кишит ходячими."}</p>
-        <button ${done?"disabled":""} data-action="clear" data-id="${id}">${done?"Зачищено":"Зачистить (🪵 "+p.cost+")"}</button></article>`;
+        <p>${done?"Сектор расчищен и под защитой.":"Сектор заблокирован зараженными."}</p>
+        <button ${done?"disabled":""} data-action="clear" data-id="${id}">${done?"Безопасно":"Исследовать (🪵 "+p.cost+")"}</button></article>`;
   }).join("")}</div>`;
 }
 
@@ -235,22 +217,28 @@ function renderUI(){
   
   if(tab==="base") $("panel").innerHTML = renderBase();
   else if(tab==="territory") $("panel").innerHTML = renderTerritory();
-  else $("panel").innerHTML = `<p style="text-align:center; color:gray; margin-top:20px;">Раздел в разработке</p>`;
+  else $("panel").innerHTML = `<p style="text-align:center; color:gray; margin-top:20px;">Раздел готов к настройке</p>`;
   
   $("food").innerText = fmt(s.food); $("wood").innerText = fmt(s.wood);
   $("hq-lvl").innerText = s.buildings.hq;
 }
 
-/* ================= 3. ДЕЛАЛИЗИРОВАННЫЙ 2.5D CANVAS ДВИЖОК ================= */
+function pay(c){
+  if((c.food||0)>s.food || (c.wood||0)>s.wood) return false;
+  s.food-=(c.food||0); s.wood-=(c.wood||0); return true;
+}
+
+/* ================= 3. ПРЕМИАЛЬНЫЙ 2.5D CANVAS ДВИЖОК (TWD SURVIVORS) ================= */
 const canvas = $("world"), ctx = canvas.getContext("2d");
 let camera = { x: 0, y: 0, scale: 1.1 };
-let hits = []; 
+let hits = [];
 
+// Перевод изометрических координат в экранные
 function iso(c, r) {
   const cx = canvas.width / 2 + camera.x;
-  const cy = canvas.height / 2 - 110 + camera.y; 
-  const tw = 68 * camera.scale;
-  const th = 34 * camera.scale;
+  const cy = canvas.height / 2 - 80 + camera.y; 
+  const tw = 72 * camera.scale;
+  const th = 36 * camera.scale;
   return { x: cx + (c - r) * tw, y: cy + (c + r) * th };
 }
 
@@ -262,222 +250,187 @@ function poly(points, fill, stroke=null, lw=1) {
   if(stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
 }
 
-function drawBlock(c, r, w, d, h, topColor, sideLeft, sideRight) {
-  const p1 = iso(c, r), p2 = iso(c+w, r), p3 = iso(c+w, r+d), p4 = iso(c, r+d);
-  const up = p => ({ x: p.x, y: p.y - h * camera.scale });
-  
-  poly([p2, p3, up(p3), up(p2)], sideRight); // Правая грань (Тень)
-  poly([p4, p3, up(p3), up(p4)], sideLeft);  // Левая грань
-  poly([up(p1), up(p2), up(p3), up(p4)], topColor); // Крыша
-}
+// 1. ОТРИСОВКА АСФАЛЬТА, ДОРОГ И ПЕРЕКРЕСТКА
+function drawRoadNetwork() {
+  // Асфальтовый перекресток как в TWD
+  for(let r=-2; r<7; r++) {
+    for(let c=-2; c<7; c++) {
+      const p1 = iso(c, r), p2 = iso(c+1, r), p3 = iso(c+1, r+1), p4 = iso(c, r+1);
+      
+      // Дорожная полоса (Перекресток по центру)
+      const isRoad = (c === 2 || r === 2);
+      const isSidewalk = (c === 1 || c === 3 || r === 1 || r === 3);
 
-// Отрисовка детализированной земли с текстурой
-function drawGround(c, r) {
-  const p1 = iso(c, r), p2 = iso(c+1, r), p3 = iso(c+1, r+1), p4 = iso(c, r+1);
-  poly([p1, p2, p3, p4], "#222c23", "#1a211a", 1);
-  
-  // Камешки и травка (Псевдослучайная генерация)
-  const seed = Math.sin(c * 12.9898 + r * 78.233) * 43758.5453;
-  if ((seed % 1) > 0.6) {
-    const center = iso(c+0.5, r+0.5);
-    ctx.fillStyle = "#161d17";
-    ctx.fillRect(center.x, center.y, 3*camera.scale, 2*camera.scale);
-  }
-}
-
-// Деревянный забор (Палисад) вокруг базы
-function drawFence(c, r, dir) {
-  const p1 = iso(c, r), p2 = iso(c+1, r), p3 = iso(c+1, r+1);
-  const p = dir === "right" ? p2 : p3;
-  const start = dir === "right" ? p1 : p2;
-  
-  const h = 18 * camera.scale;
-  // Столбы забора
-  for(let i=0; i<=3; i++) {
-    const fx = start.x + (p.x - start.x)*(i/3);
-    const fy = start.y + (p.y - start.y)*(i/3);
-    ctx.beginPath();
-    ctx.moveTo(fx, fy); ctx.lineTo(fx, fy - h);
-    ctx.strokeStyle = "#5a4533"; ctx.lineWidth = 3 * camera.scale; ctx.stroke();
-    // Острое вершие колья
-    ctx.beginPath(); ctx.arc(fx, fy - h, 1.5*camera.scale, 0, Math.PI*2);
-    ctx.fillStyle = "#3d2e24"; ctx.fill();
-  }
-}
-
-// Полноценная графика построек TWD: Survivors
-function drawDetailedBuilding(id, x, y, time) {
-  const sIso = iso(x+0.9, y+0.9);
-
-  if (id === "hq") {
-    // Кирпичный штаб-бункер
-    drawBlock(x+0.1, y+0.1, 1.6, 1.6, 25, "#424b54", "#2a3137", "#191f24");
-    drawBlock(x+0.3, y+0.3, 1.2, 1.2, 45, "#525d68", "#38414a", "#252b31");
-    
-    // Мешки с песком перед входом
-    const sb = iso(x+0.3, y+1.6);
-    ctx.fillStyle = "#8a7352"; ctx.beginPath(); ctx.ellipse(sb.x, sb.y, 12*camera.scale, 5*camera.scale, 0, 0, Math.PI*2); ctx.fill();
-
-    // Мачта + вращающийся прожектор
-    const ant = iso(x+0.9, y+0.9);
-    ctx.beginPath(); ctx.moveTo(ant.x, ant.y-45*camera.scale); ctx.lineTo(ant.x, ant.y-90*camera.scale); ctx.strokeStyle="#888"; ctx.lineWidth=2; ctx.stroke();
-    
-    // Вращающийся луч света
-    const lightAngle = time * 1.5;
-    ctx.beginPath();
-    ctx.moveTo(ant.x, ant.y-90*camera.scale);
-    ctx.lineTo(ant.x + Math.cos(lightAngle)*80*camera.scale, ant.y - 90*camera.scale + Math.sin(lightAngle)*40*camera.scale);
-    ctx.strokeStyle = "rgba(255,255,200,0.15)"; ctx.lineWidth = 15*camera.scale; ctx.stroke();
-
-    // Мигающий красный огонек
-    if(Math.sin(time*6) > 0) {
-      ctx.beginPath(); ctx.arc(ant.x, ant.y-90*camera.scale, 3*camera.scale, 0, Math.PI*2); ctx.fillStyle="#ff3333"; ctx.fill();
+      if (isRoad) {
+        poly([p1, p2, p3, p4], "#373c42", "#282c31", 1); // Тёмный асфальт
+        
+        // Разметка дорог
+        if (c === 2 && r !== 2) {
+          const m1 = iso(c+0.45, r+0.2), m2 = iso(c+0.55, r+0.2), m3 = iso(c+0.55, r+0.8), m4 = iso(c+0.45, r+0.8);
+          poly([m1, m2, m3, m4], "#d1a843"); // Желтая разметка
+        }
+      } else if (isSidewalk) {
+        poly([p1, p2, p3, p4], "#545b63", "#3f444c", 1); // Бетонные плиты тротуара
+      } else {
+        // Газоны с сухой травой
+        poly([p1, p2, p3, p4], "#4e573e", "#3a4230", 1);
+      }
     }
   }
-  else if (id === "farm") {
-    // Грядки
-    drawBlock(x+0.2, y+0.1, 0.6, 1.6, 4, "#3a2c20", "#241e17", "#14110e");
-    drawBlock(x+1.0, y+0.1, 0.6, 1.6, 4, "#3a2c20", "#241e17", "#14110e");
-    
-    // Зелень на грядке
-    const g1 = iso(x+0.5, y+0.9);
-    ctx.fillStyle = "#4ade80"; ctx.beginPath(); ctx.arc(g1.x, g1.y-4*camera.scale, 6*camera.scale, 0, Math.PI*2); ctx.fill();
-
-    // Стекло парника
-    ctx.globalAlpha = 0.65;
-    drawBlock(x+0.2, y+0.1, 0.6, 1.6, 20, "#60a5fa", "#3b82f6", "#1d4ed8");
-    ctx.globalAlpha = 1.0;
-  }
-  else if (id === "mill") {
-    // Навес лесопилки
-    drawBlock(x+0.2, y+0.2, 1.4, 1.4, 6, "#544133", "#38281f", "#211a13"); 
-    
-    // Бревна (со спилом)
-    const logIso = iso(x+0.5, y+0.6);
-    ctx.fillStyle = "#9a7b4f"; ctx.beginPath(); ctx.ellipse(logIso.x, logIso.y-8*camera.scale, 8*camera.scale, 12*camera.scale, 0.5, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = "#5c4428"; ctx.lineWidth=1; ctx.stroke(); // Годовые кольца
-
-    // Крыша навеса
-    drawBlock(x+0.8, y+0.3, 0.7, 1.0, 22, "#475569", "#334155", "#1e293b");
-  }
-  else if (id === "barracks") {
-    // Военные палатки
-    drawBlock(x+0.1, y+0.1, 0.8, 0.8, 22, "#3f523d", "#2b3d29", "#182617");
-    drawBlock(x+0.9, y+0.9, 0.8, 0.8, 22, "#3f523d", "#2b3d29", "#182617");
-    
-    // Костер
-    const fire = iso(x+1.3, y+0.3);
-    const fSize = (Math.sin(time*12) * 2 + 16) * camera.scale;
-    const fGrad = ctx.createRadialGradient(fire.x, fire.y-5, 0, fire.x, fire.y-5, fSize);
-    fGrad.addColorStop(0, "rgba(251, 146, 60, 0.9)");
-    fGrad.addColorStop(0.5, "rgba(239, 68, 68, 0.4)");
-    fGrad.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = fGrad; ctx.beginPath(); ctx.arc(fire.x, fire.y-5, fSize, 0, Math.PI*2); ctx.fill();
-  }
-  else if (id === "wall") {
-    // Деревянная вышка
-    drawBlock(x+0.4, y+0.4, 0.8, 0.8, 55, "#5c4835", "#3d2f23", "#241c16");
-  }
-
-  // Значок готовности ресурса
-  if ((id === "farm" && readyToCollect.farm) || (id === "mill" && readyToCollect.mill)) {
-    const bubbleY = sIso.y - 70 * camera.scale + Math.sin(time*4)*4; 
-    ctx.beginPath(); ctx.roundRect(sIso.x - 32*camera.scale, bubbleY - 14*camera.scale, 64*camera.scale, 28*camera.scale, 14*camera.scale);
-    ctx.fillStyle = "#f4b136"; ctx.fill();
-    ctx.fillStyle = "#000"; ctx.font = `900 ${12*camera.scale}px sans-serif`; ctx.textAlign="center";
-    ctx.fillText(id==="farm"?"🌾 150":"🪵 80", sIso.x, bubbleY+4*camera.scale);
-    hits.push({ type: "collect", id: id, x: sIso.x, y: bubbleY, r: 35 * camera.scale });
-  }
-
-  hits.push({ type: "building", id: id, x: sIso.x, y: sIso.y-20, r: 50 * camera.scale });
 }
 
-// Отрисовка Густого тумана войны
-function drawFog(c, r) {
-  const center = iso(c+1, r+1);
-  const h = 30 * camera.scale;
+// 2. ДЕТАЛИЗИРОВАННЫЕ ДЕРЕВЬЯ (Осенние лиственные и сосны)
+function drawTree(c, r, type="oak") {
+  const p = iso(c, r);
   
-  const grad = ctx.createRadialGradient(center.x, center.y - h, 0, center.x, center.y - h, 110 * camera.scale);
-  grad.addColorStop(0, "rgba(8, 10, 13, 0.98)");
-  grad.addColorStop(0.7, "rgba(8, 10, 13, 0.85)");
-  grad.addColorStop(1, "rgba(8, 10, 13, 0)");
-  
-  ctx.fillStyle = grad;
-  ctx.beginPath(); ctx.arc(center.x, center.y - h, 110 * camera.scale, 0, Math.PI*2); ctx.fill();
+  // Тень на земле
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.beginPath(); ctx.ellipse(p.x, p.y, 16*camera.scale, 8*camera.scale, 0, 0, Math.PI*2); ctx.fill();
 
-  // Значок замка
-  ctx.font = `${18 * camera.scale}px Arial`; ctx.textAlign = "center";
-  ctx.fillText("🔒", center.x, center.y - h - 10);
-  hits.push({ type: "land", id: Object.keys(TERRITORY).find(k=>TERRITORY[k].x===c && TERRITORY[k].y===r), x: center.x, y: center.y - 20, r: 50 * camera.scale });
+  const h = 45 * camera.scale;
+  // Ствол
+  ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y - h);
+  ctx.strokeStyle = "#4a3525"; ctx.lineWidth = 4 * camera.scale; ctx.stroke();
+
+  // Крона дерева
+  if (type === "oak") {
+    // Оранжево-осеннее дубовое дерево
+    ctx.fillStyle = "#c86d3b";
+    ctx.beginPath(); ctx.arc(p.x - 8*camera.scale, p.y - h - 5*camera.scale, 14*camera.scale, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#e08d49";
+    ctx.beginPath(); ctx.arc(p.x + 6*camera.scale, p.y - h - 10*camera.scale, 16*camera.scale, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#aa5229";
+    ctx.beginPath(); ctx.arc(p.x, p.y - h + 5*camera.scale, 12*camera.scale, 0, Math.PI*2); ctx.fill();
+  } else {
+    // Зеленая ель / сосна
+    poly([{x: p.x-16*camera.scale, y: p.y-h+10*camera.scale}, {x: p.x+16*camera.scale, y: p.y-h+10*camera.scale}, {x: p.x, y: p.y-h-25*camera.scale}], "#2d4a34");
+    poly([{x: p.x-12*camera.scale, y: p.y-h-5*camera.scale}, {x: p.x+12*camera.scale, y: p.y-h-5*camera.scale}, {x: p.x, y: p.y-h-35*camera.scale}], "#3d6144");
+  }
 }
 
+// 3. ЗДАНИЯ С ТЕКСТУРАМИ И РАЗРУШЕНИЯМИ (TWD SURVIVORS)
+function drawHQBuilding(x, y) {
+  const p1 = iso(x, y), p2 = iso(x+2, y), p3 = iso(x+2, y+2), p4 = iso(x, y+2);
+  const h = 50 * camera.scale;
+  const up = p => ({ x: p.x, y: p.y - h });
+
+  // Корпус ратуши / усадьбы
+  poly([p2, p3, up(p3), up(p2)], "#5c4a3e"); // Стена справа
+  poly([p4, p3, up(p3), up(p4)], "#756254"); // Стена слева
+  
+  // Красная черепичная крыша с повреждениями
+  const rApex1 = iso(x+1, y); rApex1.y -= (h + 25*camera.scale);
+  const rApex2 = iso(x+1, y+2); rApex2.y -= (h + 25*camera.scale);
+
+  poly([up(p1), rApex1, rApex2, up(p4)], "#a84332", "#732b1e", 1.5); // Крыша слева
+  poly([up(p2), rApex1, rApex2, up(p3)], "#8c3222", "#5e2316", 1.5); // Крыша справа
+
+  // Дырка/разрушение в черепичной крыше (как на скрине TWD!)
+  const hole = iso(x+0.8, y+0.8); hole.y -= (h + 10*camera.scale);
+  ctx.fillStyle = "#291e19";
+  ctx.beginPath(); ctx.arc(hole.x, hole.y, 8*camera.scale, 0, Math.PI*2); ctx.fill();
+
+  // Белая колоннада и крыльцо
+  const porch = iso(x+1, y+2.1);
+  ctx.fillStyle = "#d1c7bd";
+  ctx.fillRect(porch.x - 12*camera.scale, porch.y - 25*camera.scale, 5*camera.scale, 20*camera.scale);
+  ctx.fillRect(porch.x + 8*camera.scale, porch.y - 25*camera.scale, 5*camera.scale, 20*camera.scale);
+}
+
+function drawFarmBuilding(x, y) {
+  // Грядки с томатами и заборчик
+  for(let i=0; i<3; i++) {
+    const p1 = iso(x+0.2+i*0.4, y+0.2), p2 = iso(x+0.4+i*0.4, y+0.2), p3 = iso(x+0.4+i*0.4, y+1.3), p4 = iso(x+0.2+i*0.4, y+1.3);
+    poly([p1, p2, p3, p4], "#3d2b1f"); // Земля
+    
+    // Кусты томатов
+    const cp = iso(x+0.3+i*0.4, y+0.75);
+    ctx.fillStyle = "#486e38"; ctx.beginPath(); ctx.arc(cp.x, cp.y-6*camera.scale, 6*camera.scale, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#e0382b"; ctx.beginPath(); ctx.arc(cp.x+2, cp.y-7*camera.scale, 2.5*camera.scale, 0, Math.PI*2); ctx.fill(); // Томаты
+  }
+}
+
+function drawYellowBusBarricade(x, y) {
+  // Перевернутый желтый школьный автобус на дороге (как в TWD)
+  const p1 = iso(x, y), p2 = iso(x+1.5, y), p3 = iso(x+1.5, y+0.6), p4 = iso(x, y+0.6);
+  const h = 18 * camera.scale;
+  const up = p => ({ x: p.x, y: p.y - h });
+
+  poly([p2, p3, up(p3), up(p2)], "#b88a1d");
+  poly([p4, p3, up(p3), up(p4)], "#d1a126");
+  poly([up(p1), up(p2), up(p3), up(p4)], "#eec132");
+
+  // Окна автобуса
+  const win = iso(x+0.7, y+0.3);
+  ctx.fillStyle = "#222"; ctx.fillRect(win.x - 15*camera.scale, win.y - h - 2*camera.scale, 25*camera.scale, 6*camera.scale);
+}
+
+// 4. ТУМАН ВОЙНЫ И СОЛНЕЧНЫЙ БЛИК (ATMOSPHERE)
+function drawSunLightAndFog() {
+  // Проплывающие облака тумана по бокам
+  const time = Date.now() / 3000;
+  const fogGrad1 = ctx.createRadialGradient(canvas.width*0.1, canvas.height*0.2, 50, canvas.width*0.1, canvas.height*0.2, 350);
+  fogGrad1.addColorStop(0, "rgba(220, 225, 230, 0.45)");
+  fogGrad1.addColorStop(1, "rgba(220, 225, 230, 0)");
+  ctx.fillStyle = fogGrad1; ctx.beginPath(); ctx.arc(canvas.width*0.1 + Math.sin(time)*30, canvas.height*0.2, 350, 0, Math.PI*2); ctx.fill();
+
+  // Солнечный блик сверху (Lens Flare)
+  const sunX = canvas.width * 0.65, sunY = canvas.height * 0.15;
+  const sunGrad = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 300);
+  sunGrad.addColorStop(0, "rgba(255, 235, 170, 0.4)");
+  sunGrad.addColorStop(0.4, "rgba(255, 200, 120, 0.15)");
+  sunGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = sunGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// 5. ГЛАВНЫЙ ЦИКЛ РЕНДЕРА CANVAS
 function drawGame() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   hits = [];
-  const time = Date.now() / 1000;
 
-  // 1. Земля
-  for(let r=-2; r<7; r++) {
-    for(let c=-2; c<7; c++) {
-      drawGround(c, r);
-    }
-  }
+  // 1. Сеть дорог и ландшафт
+  drawRoadNetwork();
 
-  // 2. Деревянный забор (Палисад) по периметру
-  drawFence(-0.5, -0.5, "right");
-  drawFence(-0.5, -0.5, "down");
-  drawFence(5.5, -0.5, "down");
-  drawFence(-0.5, 5.5, "right");
+  // 2. Детали декораций (Перевернутый автобус, завалы)
+  drawYellowBusBarricade(2, 4.2);
 
-  // 3. Выжившие (NPC)
-  npcs.forEach(npc => {
-    const dx = npc.tx - npc.x, dy = npc.ty - npc.y;
-    const dist = Math.hypot(dx, dy);
-    if(dist < 0.1) { npc.tx = 0 + Math.random()*4; npc.ty = 0 + Math.random()*4; }
-    else { npc.x += (dx/dist)*npc.speed; npc.y += (dy/dist)*npc.speed; }
+  // 3. Деревья на газонах (Сортировка глубины)
+  drawTree(-0.5, 0.5, "oak");
+  drawTree(0.5, -0.5, "pine");
+  drawTree(3.8, -0.5, "oak");
+  drawTree(-0.8, 3.5, "pine");
+  drawTree(4.2, 3.8, "oak");
+
+  // 4. Постройки
+  drawHQBuilding(BUILD.hq.x, BUILD.hq.y);
+  drawFarmBuilding(BUILD.farm.x, BUILD.farm.y);
+
+  // Иконки сбора готовых ресурсов над зданиями
+  if (readyToCollect.farm) {
+    const center = iso(BUILD.farm.x + 0.75, BUILD.farm.y + 0.75);
+    const bubbleY = center.y - 45 * camera.scale + Math.sin(Date.now()/300)*4;
     
-    const p = iso(npc.x, npc.y);
-    ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(p.x, p.y, 5*camera.scale, 2.5*camera.scale, 0, 0, Math.PI*2); ctx.fill(); // Тень
-    ctx.fillStyle = npc.shirtColor; ctx.beginPath(); ctx.arc(p.x, p.y-7*camera.scale, 3.5*camera.scale, 0, Math.PI*2); ctx.fill(); // Одежда
-    ctx.fillStyle = "#e2b897"; ctx.beginPath(); ctx.arc(p.x, p.y-12*camera.scale, 2.5*camera.scale, 0, Math.PI*2); ctx.fill(); // Голова
-  });
-
-  // 4. Ходячие (Зомби) за забором в тумане
-  zombies.forEach(z => {
-    const dx = z.tx - z.x, dy = z.ty - z.y;
-    const dist = Math.hypot(dx, dy);
-    if(dist < 0.2) { z.tx = z.x + (Math.random()-0.5)*2; z.ty = z.y + (Math.random()-0.5)*2; }
-    else { z.x += (dx/dist)*z.speed; z.y += (dy/dist)*z.speed; }
-
-    const p = iso(z.x, z.y);
-    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.ellipse(p.x, p.y, 5*camera.scale, 2*camera.scale, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = "#3f4a3c"; ctx.beginPath(); ctx.arc(p.x, p.y-6*camera.scale, 3*camera.scale, 0, Math.PI*2); ctx.fill(); // Потрепанная тушка
-    ctx.fillStyle = "#5c6b57"; ctx.beginPath(); ctx.arc(p.x, p.y-10*camera.scale, 2*camera.scale, 0, Math.PI*2); ctx.fill(); // Гнилая голова
-  });
-
-  // 5. Туман войны
-  for(const [id, t] of Object.entries(TERRITORY)) {
-    if (!s.territory.cleared.includes(id)) drawFog(t.x, t.y);
-  }
-
-  // 6. Здания (Сортировка по глубине)
-  const blds = Object.entries(BUILD).sort((a,b) => (a[1].x+a[1].y) - (b[1].x+b[1].y));
-  for(const [id, b] of blds) {
-    if(s.buildings[id]) drawDetailedBuilding(id, b.x, b.y, time);
+    ctx.beginPath(); ctx.roundRect(center.x - 22*camera.scale, bubbleY - 12*camera.scale, 44*camera.scale, 24*camera.scale, 6*camera.scale);
+    ctx.fillStyle = "#e0382b"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.font = `bold ${12*camera.scale}px sans-serif`; ctx.textAlign="center";
+    ctx.fillText("🍅 55", center.x, bubbleY+4*camera.scale);
     
-    if(selectedObj === id) {
-      const p = iso(b.x+0.9, b.y+0.9);
-      ctx.beginPath(); ctx.ellipse(p.x, p.y, 55*camera.scale, 27.5*camera.scale, 0, 0, Math.PI*2);
-      ctx.strokeStyle = "#f4b136"; ctx.lineWidth = 3; ctx.stroke();
-    }
+    hits.push({ type: "collect", id: "farm", x: center.x, y: bubbleY, r: 30 * camera.scale });
   }
+
+  // Зоны клика по ратуше
+  const hqIso = iso(BUILD.hq.x + 1, BUILD.hq.y + 1);
+  hits.push({ type: "building", id: "hq", x: hqIso.x, y: hqIso.y - 30*camera.scale, r: 60 * camera.scale });
+
+  // 5. Атмосферный туман и солнце
+  drawSunLightAndFog();
 
   requestAnimationFrame(drawGame);
 }
 
-/* ================= 4. УПРАВЛЕНИЕ, СВАЙП И КЛИКИ ================= */
+/* ================= 4. КАМЕРА, СВАЙПЫ И КЛИКИ ================= */
 const layer = $("camera-layer");
 let isDragging = false, startX, startY, camStartX, camStartY, isClick = true;
 
@@ -495,14 +448,14 @@ layer.addEventListener("pointermove", e => {
   camera.x = camStartX + dx; camera.y = camStartY + dy;
 });
 
-function flyResource(startX, startY, type) {
+function flyResource(startX, startY) {
   const el = document.createElement("div");
-  el.className = "fly-res"; el.innerText = type === "farm" ? "+150 🌾" : "+80 🪵";
+  el.className = "fly-res"; el.innerText = "+55 🍅";
   el.style.left = startX + "px"; el.style.top = startY + "px";
   document.body.appendChild(el);
-  const target = $(type === "farm" ? "btn-food" : "btn-wood").getBoundingClientRect();
+  const target = $("btn-food").getBoundingClientRect();
   setTimeout(() => { el.style.left = target.left+"px"; el.style.top = target.top+"px"; el.style.transform="scale(0.5)"; el.style.opacity="0"; }, 50);
-  setTimeout(() => { el.remove(); if(type==="farm") s.food+=150; else s.wood+=80; renderUI(); }, 800);
+  setTimeout(() => { el.remove(); s.food += 55; renderUI(); }, 800);
 }
 
 layer.addEventListener("pointerup", e => {
@@ -512,9 +465,9 @@ layer.addEventListener("pointerup", e => {
       const h = hits[i];
       if (Math.hypot(e.clientX - h.x, e.clientY - h.y) < h.r) {
         if (h.type === "collect") {
-          flyResource(e.clientX, e.clientY, h.id); readyToCollect[h.id] = false;
+          flyResource(e.clientX, e.clientY); readyToCollect.farm = false;
         } else {
-          selectedObj = h.id; tab = h.type === "land" ? "territory" : "base"; dockSize = "normal"; renderUI();
+          selectedObj = h.id; tab = "base"; dockSize = "normal"; renderUI();
         }
         return;
       }
@@ -527,8 +480,8 @@ document.addEventListener("click", e => {
   const btnZoom = e.target.closest("[data-camera]");
   if(btnZoom) {
     const act = btnZoom.dataset.camera;
-    if(act === "in") camera.scale = Math.min(2.0, camera.scale * 1.25);
-    if(act === "out") camera.scale = Math.max(0.6, camera.scale / 1.25);
+    if(act === "in") camera.scale = Math.min(2.2, camera.scale * 1.2);
+    if(act === "out") camera.scale = Math.max(0.6, camera.scale / 1.2);
     if(act === "home") { camera.x = 0; camera.y = 0; camera.scale = 1.1; }
     return;
   }
@@ -536,11 +489,10 @@ document.addEventListener("click", e => {
   const a = b.dataset.action, id = b.dataset.id;
   if (a === "tab") { tab = id; renderUI(); }
   if (a === "collapse") { dockSize = dockSize==="map" ? "normal" : "map"; renderUI(); }
-  if (a === "build" && pay({wood: s.buildings[id]*50})) { s.buildings[id]++; renderUI(); }
-  if (a === "clear" && pay({wood: TERRITORY[id].cost})) { s.territory.cleared.push(id); renderUI(); }
+  if (a === "build" && pay({wood: s.buildings[id]*50 || 10})) { s.buildings[id]++; renderUI(); }
 });
 
-/* ================= 5. ЗАПУСК ================= */
+/* ================= 5. ЗАПУСК ИГРЫ ================= */
 renderUI();
 requestAnimationFrame(drawGame);
 </script>
