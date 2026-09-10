@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#121517">
+<title>Последний порт — Живой порт</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* ================= ТЕМНАЯ ТЕМА И БАЗОВЫЕ СТИЛИ ================= */
+:root {
+  color-scheme: dark;
+  --text: #e5eeea;
+  --muted: #8a949e;
+  --gold: #f0a500;
+  --bg-main: #121517;
+  --bg-card: #1e2227;
+  --border: #2d3339;
+  --height: 100dvh;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-main); }
+body {
+  font: 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+}
+
+button, input, select { font: inherit; }
+button { cursor: pointer; border: none; outline: none; }
+button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.5; cursor: default; transform: none; filter: grayscale(1); }
+[hidden] { display: none !important; }
+
+/* ================= СЛОИ (CANVAS И UI) ================= */
+main {
+  position: relative; width: 100%; height: var(--height); overflow: hidden;
+}
+
+/* Слой 1: Полноэкранный Canvas */
+.scene {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 1; background: #0c0f12; overflow: hidden; touch-action: none;
+}
+canvas { display: block; transform-origin: center; touch-action: none; }
+#camera-layer { position: absolute; inset: 0; z-index: 2; cursor: grab; user-select: none; }
+#camera-layer.dragging { cursor: grabbing; }
+
+/* Слой 2: Плавающий UI (HUD) */
+.ui-layer {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 10; pointer-events: none; display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top, 10px) env(safe-area-inset-right, 10px) 0 env(safe-area-inset-left, 10px);
+}
+
+/* ================= ВЕРХНИЙ HUD ================= */
+header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 10px; pointer-events: auto;
+}
+
+/* Профиль игрока */
+.profile-badge {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(18, 21, 23, 0.9); border: 1px solid var(--gold);
+  border-radius: 40px; padding: 4px 14px 4px 4px; backdrop-filter: blur(8px);
+}
+.profile-avatar { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; }
+.profile-info { display: flex; flex-direction: column; }
+.profile-level { font-size: 9px; color: var(--gold); font-weight: 800; letter-spacing: 0.5px; }
+.profile-power { font-size: 15px; font-weight: 900; display: flex; align-items: center; gap: 4px; margin-top: -2px; }
+
+/* Ресурсы */
+.resources {
+  display: grid; grid-template-columns: auto auto; gap: 6px; align-items: start;
+}
+.resource {
+  background: rgba(18, 21, 23, 0.9); border: 1px solid var(--border);
+  border-radius: 16px; padding: 6px 10px; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px; backdrop-filter: blur(8px);
+}
+.resource span { font-variant-numeric: tabular-nums; }
+.res-food { color: #a5d6a7; } .res-wood { color: #d7ccc8; }
+.res-parts { color: #b0bec5; } .res-wave { color: #81d4fa; }
+
+/* Виджет Главы */
+#chapter-strip {
+  align-self: flex-start; margin: 0 10px;
+  background: rgba(18, 21, 23, 0.9); border: 1px solid var(--border);
+  border-radius: 12px; padding: 6px 12px 6px 6px; display: flex; align-items: center; gap: 10px;
+  backdrop-filter: blur(8px); pointer-events: auto; text-align: left;
+}
+.chapter-avatar { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: #333; display: grid; place-items: center; font-size: 18px;}
+.chapter-copy { display: flex; flex-direction: column; }
+.chapter-copy small { font-size: 10px; color: var(--muted); }
+.chapter-copy strong { font-size: 13px; font-weight: bold; color: #fff; }
+#chapter-status { font-size: 10px; color: var(--gold); margin-left: 10px; }
+#chapter-strip.ready { border-color: var(--gold); }
+
+/* Плашка события и бейдж */
+#event-strip { align-self: center; background: var(--gold); color: #000; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 12px; margin-top: 10px; pointer-events: auto; box-shadow: 0 4px 10px rgba(240, 165, 0, 0.4); }
+.badge { position: absolute; top: 130px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--muted); letter-spacing: 1px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 10px; }
+
+/* ================= ПРАВЫЕ КНОПКИ КАМЕРЫ ================= */
+.camera-controls {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 8px; pointer-events: auto;
+}
+.camera-controls button, .icon {
+  width: 44px; height: 44px; background: rgba(18, 21, 23, 0.9);
+  border: 1px solid var(--border); border-radius: 50%; color: #fff;
+  font-size: 20px; display: grid; place-items: center; backdrop-filter: blur(8px);
+}
+.camera-controls .primary { color: var(--gold); border-color: var(--gold); }
+
+/* ================= НИЖНЯЯ ПАНЕЛЬ (DOCK) ================= */
+#dock {
+  margin-top: auto; flex-shrink: 0; height: 42dvh; min-height: 250px;
+  background: #16191c; border-top-left-radius: 20px; border-top-right-radius: 20px;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.8); pointer-events: auto;
+  display: flex; flex-direction: column; transition: height 0.3s ease;
+}
+#dock[data-size="large"] { height: 65dvh; }
+#dock[data-size="map"] { height: auto; min-height: 0; padding-bottom: 20px; }
+
+/* Тулбар вкладок (Жители, Торговля и тд) */
+.toolbar {
+  display: flex; gap: 8px; padding: 15px 15px 10px; overflow-x: auto; scrollbar-width: none;
+}
+.toolbar::-webkit-scrollbar { display: none; }
+.toolbar button {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--muted); padding: 10px 14px; border-radius: 10px;
+  font-size: 12px; font-weight: bold; white-space: nowrap;
+}
+.toolbar button.active { background: #2a3036; color: #fff; }
+.size-button { width: 40px; padding: 0 !important; display: grid; place-items: center; }
+
+/* Панель со скроллом карточек */
+#panel {
+  flex: 1; overflow-y: auto; padding: 0 15px 15px; scrollbar-width: none;
+}
+#panel::-webkit-scrollbar { display: none; }
+
+/* ================= КАРТОЧКИ ================= */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+}
+.card.selected { border-color: var(--gold); }
+.card.working { border-color: #8bc34a; }
+
+.build-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.build-head h3 { margin: 0; font-size: 14px; color: #fff; }
+.build-head small { font-size: 10px; color: var(--gold); background: rgba(240, 165, 0, 0.1); padding: 2px 6px; border-radius: 4px; }
+.card p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; flex: 1; }
+
+.card > button {
+  width: 100%; background: transparent; border: 1px solid var(--gold);
+  color: var(--gold); padding: 10px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-top: auto;
+}
+.card > button.primary { background: var(--gold); color: #000; }
+
+/* Элементы внутри карточек */
+.row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.row button { flex: 1; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-weight: bold;}
+.row button.primary { background: var(--gold); color: #000; border-color: var(--gold); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { background: #121517; border: 1px solid var(--border); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 10px; }
+
+/* Полоски прогресса */
+.bar { height: 6px; background: #121517; border-radius: 4px; overflow: hidden; margin: 4px 0; }
+.bar i { display: block; height: 100%; background: var(--gold); }
+.bar.enemy i { background: #e63946; }
+
+/* ================= САМАЯ НИЖНЯЯ НАВИГАЦИЯ ================= */
+nav {
+  display: flex; justify-content: space-around; align-items: center;
+  background: var(--bg-main); height: 65px; border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom, 0px); flex-shrink: 0;
+}
+nav button {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: transparent; border: none; color: var(--muted); font-size: 10px; font-weight: 600;
+}
+nav button.active { color: var(--gold); }
+nav button b { font-size: 20px; font-weight: normal; }
+
+/* ================= УВЕДОМЛЕНИЯ И ЖУРНАЛ ================= */
+.notice-row { position: absolute; bottom: 80px; left: 15px; right: 15px; display: flex; gap: 10px; pointer-events: auto; }
+#notice { flex: 1; background: rgba(18, 21, 23, 0.9); border-left: 2px solid var(--gold); padding: 8px 12px; font-size: 11px; border-radius: 6px; backdrop-filter: blur(8px); }
+#journal-button { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #fff; }
+#journal-button.unread { border-color: var(--gold); color: var(--gold); }
+
+/* ================= МОДАЛЬНЫЕ ОКНА ================= */
+dialog {
+  width: 90%; max-width: 400px; max-height: 85dvh; padding: 0; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 20px; color: #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+dialog::backdrop { background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+.modal { display: flex; flex-direction: column; max-height: 85dvh; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); }
+.modal-head h2 { margin: 0; font-size: 16px; color: var(--gold); }
+.modal-head small { font-size: 11px; color: var(--muted); }
+.modal-close { background: transparent; color: var(--muted); font-size: 24px; padding: 0; width: 30px; height: 30px; }
+.modal-body { padding: 15px; overflow-y: auto; }
+.modal-body p { font-size: 12px; color: var(--muted); margin: 0 0 10px 0; line-height: 1.5; }
+.modal-body button.primary { width: 100%; background: var(--gold); color: #000; padding: 12px; border-radius: 10px; font-weight: bold; margin-top: 10px; }
+.compare { display: flex; justify-content: space-between; align-items: center; background: var(--bg-main); padding: 10px; border-radius: 10px; margin-bottom: 10px; }
+.stat { display: flex; flex-direction: column; gap: 4px; }
+.stat small { font-size: 10px; color: var(--muted); }
+.stat strong { font-size: 13px; color: #fff; }
+.prices { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.price { background: #121517; border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; font-size: 11px; }
+.price.missing { color: #e63946; border-color: #e63946; }
+
+/* Вспомогательные стили для панелей */
+.summary { background: #121517; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
+.summary strong { font-size: 13px; color: var(--gold); }
+.summary p { margin-top: 6px; font-size: 11px; color: var(--muted); }
+.wide { grid-column: 1 / -1; }
+.hint { font-size: 10px; color: #6a7682; text-align: center; margin-bottom: 10px; }
+.list { display: flex; flex-direction: column; gap: 10px; }
+.batch-options button { flex: 1; padding: 8px; background: #121517; border: 1px solid var(--border); border-radius: 8px; color: #fff; }
+.batch-options button.primary { border-color: var(--gold); color: var(--gold); }
+.worker-stepper { display: flex; justify-content: space-between; align-items: center; background: #121517; border-radius: 8px; padding: 4px; margin-top: 8px; }
+.worker-stepper button { width: 40px; height: 30px; background: var(--bg-card); border-radius: 6px; color: #fff; }
+
+@media (min-width: 600px) {
+  .app-container { max-width: 480px; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+}
+</style>
+</head>
+<body>
+<main class="app-container">
+  
+  <!-- СЛОЙ CANVAS (ФОН) -->
+  <div class="scene" id="scene">
+    <canvas id="world" width="1000" height="780"></canvas>
+    <div id="camera-layer" aria-hidden="true"></div>
+  </div>
+
+  <!-- СЛОЙ UI (ПОВЕРХ CANVAS) -->
+  <div class="ui-layer">
+    
+    <!-- Верхний HUD -->
+    <header>
+      <div class="profile-badge">
+        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80" class="profile-avatar" alt="Avatar">
+        <div class="profile-info">
+          <span class="profile-level">БАЗА УР. 1</span>
+          <span class="profile-power">⚔ <span id="power">0</span></span>
+        </div>
+      </div>
+      
+      <div class="resources">
+        <div class="resource res-food">🌾 <span id="food">0</span></div>
+        <div class="resource res-wood">🪵 <span id="wood">0</span></div>
+        <div class="resource res-parts">⚙ <span id="parts">0</span></div>
+        <div class="resource res-wave">🌊 <span id="wave">1</span></div>
+      </div>
+    </header>
+
+    <!-- Сюжет / События -->
+    <button id="chapter-strip" data-action="campaign">
+      <div class="chapter-avatar">⌖</div>
+      <div class="chapter-copy">
+        <small id="chapter-number">Глава 1</small>
+        <strong id="chapter-title">Загрузка...</strong>
+      </div>
+      <span id="chapter-status"></span>
+    </button>
+    
+    <div class="badge" id="badge">ОКРЕСТНОСТИ</div>
+    <button id="event-strip" data-action="event" hidden>⌁ <span id="event-strip-title">Событие</span></button>
+
+    <!-- Кнопки управления камерой справа -->
+    <div class="camera-controls">
+      <button data-camera="in" aria-label="Приблизить">＋</button>
+      <button data-camera="out" aria-label="Отдалить">−</button>
+      <button class="primary" data-camera="home" aria-label="Общий вид">⌂</button>
+      <button id="fullscreen" class="icon" aria-label="Полноэкранный режим">⛶</button>
+      <button class="icon" data-action="help" aria-label="Об игре">?</button>
+    </div>
+
+    <!-- Уведомления перед нижней панелью -->
+    <div class="notice-row" hidden>
+      <div id="notice" role="status">Командир, порт ждёт приказов.</div>
+      <button id="journal-button" data-action="journal">☷ Журнал</button>
+    </div>
+
+    <!-- Нижняя панель с карточками -->
+    <section id="dock" data-size="normal">
+      <div class="toolbar">
+        <button data-action="people" id="people-button">♙ Жители</button>
+        <button data-action="market">⚖ Торговля</button>
+        <button data-action="research">⚙ Развитие</button>
+        <button data-action="journal" id="journal-tab-btn">☷ Журнал</button>
+        <button class="size-button" data-action="collapse">▾</button>
+        <button class="size-button" data-action="expand">⇡</button>
+      </div>
+      
+      <div id="panel"></div>
+
+      <!-- Главная Навигация -->
+      <nav>
+        <button data-action="tab" data-id="base"><b>⌂</b>База</button>
+        <button data-action="tab" data-id="territory"><b>▧</b>Земли</button>
+        <button data-action="tab" data-id="heroes"><b>★</b>Герои</button>
+        <button data-action="tab" data-id="army"><b>⚑</b>Войска</button>
+        <button data-action="tab" data-id="map"><b>⌖</b>Карта</button>
+        <button data-action="tab" data-id="battle"><b>⚔</b>Оборона</button>
+      </nav>
+    </section>
+
+  </div>
+</main>
+
+<dialog id="dialog">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="modal-title">Тайтл</h2>
+        <small id="modal-subtitle">Сабтайтл</small>
+      </div>
+      <button class="modal-close" data-action="close">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</dialog>
+<input id="import-file" type="file" accept=".json,application/json" hidden>
+
+<script>
+"use strict";
+
+/* ================= 1. БАЗОВАЯ ЛОГИКА И УТИЛИТЫ ИЗ ВАШЕГО КОДА ================= */
+const $=id=>document.getElementById(id);
+const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const KEY="last-port-complete-v4";
+const OLD_KEYS=["last-port-complete-v3","last-port-prototype-v1"];
+const CAMERA_KEY="last-port-camera-v1";
+const LIMIT=1e12,MAX_LEVEL=20,OFFLINE=28800000,LOG_LIMIT=100;
+const MARKET_PERIOD=4*60*60*1000;
+const nf=new Intl.NumberFormat("ru-RU",{maximumFractionDigits:0});
+const df=new Intl.DateTimeFormat("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const fmt=n=>nf.format(Math.floor(Math.max(0,n||0)));
+const dec=(n,d=2)=>new Intl.NumberFormat("ru-RU",{maximumFractionDigits:d}).format(n);
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=(v,f=0,min=0,max=LIMIT)=>Number.isFinite(v)?clamp(v,min,max):f;
+const int=(v,f=0,min=0,max=100000)=>Number.isInteger(v)?clamp(v,min,max):f;
+
+function time(seconds){
+  const n=Math.max(0,Math.ceil(seconds)),h=Math.floor(n/3600),m=Math.floor(n%3600/60),ss=n%60;
+  return h?`${h} ч ${m} мин`:m?`${m} мин ${ss} с`:`${ss} с`;
+}
+function say(text){ /* Отключаем старый нотис, UI стал компактнее */ console.log(text); }
+function btn(action,id,text,disabled=false,primary=false){
+  return `<button type="button" data-action="${action}" data-id="${id}" ${disabled?"disabled":""} ${primary?'class="primary"':""}>${text}</button>`;
+}
+function price(c){
+  return [["wood","🪵"],["food","🌾"],["parts","⚙"]].filter(([k])=>c[k]).map(([k,i])=>`${i} ${fmt(c[k])}`).join(" · ")||"Бесплатно";
+}
+
+/* ================= 2. ИГРОВЫЕ ДАННЫЕ (БЕЗ ИЗМЕНЕНИЙ) ================= */
+const BUILD={
+ hq:{name:"Штаб",short:"ШТАБ",icon:"⌂",desc:"Открывает новые уровни зданий и технологий.",x:2.25,y:.8,w:1.1,d:1,h:49,roof:"#b49464"},
+ farm:{name:"Теплицы",short:"ТЕПЛИЦЫ",icon:"♧",desc:"Производят еду. Работники увеличивают выпуск.",x:.05,y:.05,w:.85,d:1.25,h:21,roof:"#93ada0"},
+ mill:{name:"Лесопилка",short:"ЛЕСОПИЛКА",icon:"⚒",desc:"Производит древесину. Можно назначать работников.",x:0,y:3.25,w:.9,d:.9,h:32,roof:"#947753"},
+ barracks:{name:"Казармы",short:"КАЗАРМЫ",icon:"⚑",desc:"Усиливают гарнизон и ускоряют обучение.",x:3.25,y:3.2,w:1.05,d:.95,h:34,roof:"#687e63"},
+ wall:{name:"Периметр",short:"ПЕРИМЕТР",icon:"♜",desc:"Увеличивает прочность обороны.",x:5,y:1.2,w:.5,d:.5,h:48,roof:"#958368"},
+ workshop:{name:"Мастерская",short:"МАСТЕРСКАЯ",icon:"⚙",desc:"Производит детали и открывает исследования.",x:2.2,y:-.55,w:.8,d:.8,h:29,roof:"#638a91",need:2},
+ hospital:{name:"Госпиталь",short:"ГОСПИТАЛЬ",icon:"✚",desc:"Позволяет лечить раненых бойцов.",x:4,y:-.55,w:.85,d:.8,h:31,roof:"#c0c5b1",need:2},
+ store:{name:"Склад",short:"СКЛАД",icon:"▣",desc:"+5% ко всему производству за уровень.",x:5,y:3.4,w:.8,d:.85,h:28,roof:"#8b927f",need:2}
+};
+const CIVIC={
+ housing:{name:"Жилой квартал",short:"ЖИЛЬЁ",icon:"♙",desc:"Места для жителей. Недостаток жилья снижает эффективность.",x:-2.7,y:1.1,w:1.2,d:1,h:32,roof:"#b69a74"},
+ water:{name:"Водоснабжение",short:"ВОДА",icon:"◉",desc:"Чистая вода для поселения.",x:-2.7,y:3,w:1,d:1,h:30,roof:"#7aa7ac"},
+ energy:{name:"Электростанция",short:"ЭНЕРГИЯ",icon:"ϟ",desc:"Поддерживает рабочие места.",x:-2.7,y:4.9,w:1.1,d:1,h:26,roof:"#80988c"}
+};
+const HERO=[
+ {name:"Мира «Искра»",role:"Инженер",desc:"+18 прочности за уровень.",color:"#ba935b"},
+ {name:"Лев «Север»",role:"Следопыт",desc:"+3 урона за уровень.",color:"#729387"},
+ {name:"Ада «Пульс»",role:"Медик",desc:"+12 прочности за уровень.",color:"#b17868"}
+];
+const UNIT=[
+ {name:"Штурмовики",icon:"🛡",damage:1.4,hp:10,food:8,wood:4,parts:0,seconds:5,need:1},
+ {name:"Стрелки",icon:"🏹",damage:2.2,hp:6,food:10,wood:6,parts:0,seconds:7,need:2},
+ {name:"Разведчики",icon:"⌖",damage:2.8,hp:7,food:12,wood:4,parts:2,seconds:9,need:3}
+];
+const MISSIONS={
+ block:{name:"Заброшенный квартал",desc:"Припасы среди пустых домов.",seconds:45,food:25,enemy:18,reward:{wood:65,food:45,parts:15},x:285,y:370,need:1},
+ dock:{name:"Старые доки",desc:"Контейнеры под охраной.",seconds:90,food:45,enemy:35,reward:{wood:110,food:30,parts:40},x:750,y:490,need:1},
+ depot:{name:"Склад",desc:"Крупная добыча.",seconds:150,food:70,enemy:65,reward:{wood:210,food:100,parts:75},x:660,y:255,need:1},
+ market:{name:"Рынок",desc:"Продовольствие.",seconds:210,food:95,enemy:105,reward:{wood:160,food:340,parts:100},x:350,y:175,need:3},
+ powerplant:{name:"Энергокомплекс",desc:"Детали.",seconds:300,food:130,enemy:160,reward:{wood:320,food:170,parts:190},x:850,y:145,need:4}
+};
+const TECH={
+ logistics:{name:"Снабжение",icon:"▣",desc:"Учёт запасов и рабочие маршруты.",bonus:5,effect:"к производству",max:5},
+ weapons:{name:"Оружейное дело",icon:"⚔",desc:"Обслуживание оружия и огневых позиций.",bonus:4,effect:"к урону базы",max:5},
+ defenses:{name:"Инженерная защита",icon:"♜",desc:"Бонус прочности применяется при начале боя.",bonus:5,effect:"к прочности базы",max:5}
+};
+const ENEMIES={
+ walkers:{name:"Бродячие заражённые",icon:"☣",health:1,armor:0,desc:"Обычная орда.",color:"#b3c080"},
+ swarm:{name:"Голодная стая",icon:"≋",health:1.3,armor:0,desc:"На 30% больше здоровья.",color:"#cdb379"},
+ armored:{name:"В броне",icon:"⬟",health:1.1,armor:.22,desc:"Броня снижает урон на 22%.",color:"#a3b9be"},
+ boss:{name:"Вожак",icon:"☠",health:1.75,armor:.15,desc:"Доп. трофеи.",color:"#e4a284"}
+};
+const SKILLS=[
+ {id:"charge",hero:0,name:"Подрывной заряд",icon:"✹"},
+ {id:"volley",hero:1,name:"Огневой залп",icon:"⌖"},
+ {id:"aid",hero:2,name:"Экстренная помощь",icon:"✚"}
+];
+const TERRITORY={
+ grove:{name:"Заросший сквер",short:"СКВЕР",icon:"♧",x:-1,y:-3,need:1,previous:null,seconds:35,cost:{food:25,wood:30},reward:{wood:100,food:45,parts:5},survivors:3,bonus:"Древесина +5%",desc:"Расчистим проход к выжившим и организуем заготовку древесины."},
+ scrapyard:{name:"Свалка машин",short:"МЕТАЛЛОЛОМ",icon:"⚙",x:1,y:-3,need:2,previous:"grove",seconds:65,cost:{food:45,wood:80},reward:{wood:70,food:30,parts:65},survivors:2,bonus:"Детали +10%",desc:"Старые машины и разобранные генераторы пригодятся мастерской."},
+ garden:{name:"Старые сады",short:"САДЫ",icon:"❧",x:3,y:-3,need:2,previous:"scrapyard",seconds:95,cost:{food:65,wood:110,parts:10},reward:{food:180,wood:60,parts:15},survivors:4,bonus:"Еда +8%",desc:"За оградой сохранились плодовые деревья."},
+ clinic:{name:"Амбулатория",short:"АМБУЛАТОРИЯ",icon:"✚",x:5,y:-3,need:3,previous:"garden",seconds:140,cost:{food:90,wood:160,parts:25},reward:{food:100,wood:80,parts:80},survivors:5,bonus:"Скорость лечения +20%",desc:"Спасённые медики помогут нашему госпиталю."},
+ radio:{name:"Радиостанция",short:"РАДИОУЗЕЛ",icon:"⌁",x:7,y:-3,need:3,previous:"clinic",seconds:190,cost:{food:120,wood:210,parts:45},reward:{food:130,wood:150,parts:110},survivors:3,bonus:"Добыча вылазок +10%",desc:"Связь поможет отрядам находить ценные припасы."},
+ outpost:{name:"Блокпост",short:"БЛОКПОСТ",icon:"♜",x:7,y:-1,need:4,previous:"
