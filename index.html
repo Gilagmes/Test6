@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#121517">
-<title>The Last Port - TWD Survivors HD Engine</title>
+<title>The Last Port - Stylized Edition</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 /* ================= TWD SURVIVORS СТИЛЬ ИНТЕРФЕЙСА ================= */
@@ -22,40 +22,36 @@ button:disabled { opacity: 0.45; filter: grayscale(1); pointer-events: none; }
 
 /* ================= ИГРОВОЙ ЭКРАН И CANVAS ================= */
 main { position: relative; width: 100%; height: var(--height); overflow: hidden; }
-.scene { position: absolute; inset: 0; z-index: 1; background: #080a0c; }
+.scene { position: absolute; inset: 0; z-index: 1; background: #12181a; }
 canvas { display: block; touch-action: none; }
 #camera-layer { position: absolute; inset: 0; z-index: 2; touch-action: none; }
 
-/* ================= UI HUD В СТИЛЕ TWD SURVIVORS ================= */
+/* ================= UI HUD ================= */
 .ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 8px); }
 header { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 12px; pointer-events: auto; }
 
-/* Профиль Героя Слева Вверху */
 .profile-badge { display: flex; align-items: center; gap: 8px; background: rgba(15, 18, 22, 0.9); border: 1px solid #b48530; border-radius: 8px; padding: 3px 12px 3px 3px; backdrop-filter: blur(6px); box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
 .profile-avatar { width: 42px; height: 42px; border-radius: 6px; border: 1px solid var(--gold); object-fit: cover; }
 .profile-info { display: flex; flex-direction: column; }
 .profile-level { font-size: 9px; color: #fbbf24; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
 .profile-power { font-size: 15px; font-weight: 900; color: #fff; margin-top: -2px; text-shadow: 0 1px 3px #000; }
 
-/* Верхний Бар Ресурсов */
 .resources { display: flex; gap: 6px; }
 .res-item { background: rgba(15, 18, 22, 0.9); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.6); backdrop-filter: blur(6px); }
-.res-food { color: #86efac; border-color: rgba(134, 239, 172, 0.3); } 
-.res-wood { color: #fde047; border-color: rgba(253, 224, 71, 0.3); } 
+.res-food { color: #f87171; border-color: rgba(248, 113, 113, 0.3); } 
+.res-wood { color: #fcd34d; border-color: rgba(253, 224, 71, 0.3); } 
 .res-parts { color: #93c5fd; border-color: rgba(147, 197, 253, 0.3); } 
 
-/* Задание / Глава (Левый нижний баннер TWD-style) */
 #chapter-strip { align-self: flex-start; margin: 4px 12px; background: linear-gradient(90deg, rgba(20, 24, 30, 0.95), rgba(12, 15, 18, 0.8)); border-left: 3px solid var(--gold); border-radius: 4px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.7); backdrop-filter: blur(6px); }
 .chapter-avatar { width: 28px; height: 28px; border-radius: 4px; background: #262c33; display: grid; place-items: center; font-size: 14px; color: var(--gold); }
 .chapter-copy small { display: block; font-size: 9px; color: var(--muted); text-transform: uppercase; }
 .chapter-copy strong { font-size: 12px; color: #f3f4f6; }
 
-/* Кнопки Навигации Камеры */
-.camera-controls { position: absolute; right: 12px; top: 45%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
+.camera-controls { position: absolute; right: 12px; top: 40%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
 .camera-controls button { width: 40px; height: 40px; border-radius: 8px; background: rgba(22, 26, 32, 0.9); border: 1px solid var(--border); color: #fff; font-size: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.7); backdrop-filter: blur(6px); }
 .camera-controls .primary { border-color: var(--gold); color: var(--gold); }
 
-/* ================= НИЖНЯЯ ПАНЕЛЬ С КАРТОЧКАМИ ================= */
+/* ================= НИЖНЯЯ ПАНЕЛЬ ================= */
 #dock { margin-top: auto; background: rgba(14, 17, 21, 0.96); backdrop-filter: blur(12px); border-top-left-radius: 16px; border-top-right-radius: 16px; pointer-events: auto; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); height: 42dvh; transition: height 0.3s; z-index: 100; border-top: 1px solid var(--border); }
 #dock[data-size="map"] { height: auto; padding-bottom: env(safe-area-inset-bottom, 15px); }
 
@@ -77,15 +73,13 @@ header { display: flex; justify-content: space-between; align-items: flex-start;
 .card p { font-size: 10px; color: var(--muted); line-height: 1.3; margin: 0; flex: 1; }
 
 .card > button { background: linear-gradient(180deg, #d97706, #b45309); border: none; color: #fff; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 11px; margin-top: auto; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-.card > button.primary { background: linear-gradient(180deg, #f59e0b, #d97706); }
 
 nav { display: flex; justify-content: space-around; background: #090b0d; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); flex-shrink: 0; }
 nav button { background: none; color: #6b7280; font-size: 9px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 nav button.active { color: var(--gold); }
 nav button b { font-size: 18px; }
 
-/* Летающий сбор ресурса */
-.fly-res { position: absolute; z-index: 9999; font-weight: 900; font-size: 14px; color: #fbbf24; text-shadow: 0 2px 4px #000; pointer-events: none; transition: 0.8s cubic-bezier(0.2, 1, 0.3, 1); }
+.fly-res { position: absolute; z-index: 9999; font-weight: 900; font-size: 14px; color: #ef4444; text-shadow: 0 2px 4px #000; pointer-events: none; transition: 0.8s cubic-bezier(0.2, 1, 0.3, 1); }
 </style>
 </head>
 <body>
@@ -100,7 +94,7 @@ nav button b { font-size: 18px; }
   <div class="ui-layer">
     <header>
       <div class="profile-badge">
-        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80" class="profile-avatar" alt="Avatar">
+        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80" class="profile-avatar">
         <div class="profile-info">
           <span class="profile-level">Ратуша Ур. <span id="hq-lvl">1</span></span>
           <span class="profile-power">⚔ <span id="power">14,368</span></span>
@@ -126,7 +120,7 @@ nav button b { font-size: 18px; }
       <button data-camera="in">＋</button>
       <button data-camera="out">−</button>
       <button class="primary" data-camera="home">⌂</button>
-      <button data-action="help">?</button>
+      <button>?</button>
     </div>
 
     <!-- DOCK ПАНЕЛЬ -->
@@ -153,25 +147,17 @@ nav button b { font-size: 18px; }
   </div>
 </main>
 
-<dialog id="dialog">
-  <div class="modal">
-    <div class="modal-head"><div><h2 id="modal-title"></h2></div><button class="modal-close" data-action="close">×</button></div>
-    <div class="modal-body" id="modal-body"></div>
-  </div>
-</dialog>
-
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
 const fmt = n => new Intl.NumberFormat("ru-RU").format(Math.floor(n||0));
 
-/* ================= 1. БАЗА ДАННЫХ И СОСТОЯНИЕ ================= */
+/* ================= БАЗА ДАННЫХ И СОСТОЯНИЕ ================= */
 const BUILD = {
  hq: {name:"Ратуша", x:2, y:2, w:2, d:2},
  farm: {name:"Ферма", x:0, y:2, w:1.5, d:1.5},
  mill: {name:"Лесопилка", x:2, y:0, w:1.5, d:1.5},
- barracks: {name:"Казармы", x:4, y:2, w:1.5, d:1.5},
- wall: {name:"Вышка Обороны", x:2, y:4, w:1.2, d:1.2}
+ barracks: {name:"Казармы", x:4, y:2, w:1.5, d:1.5}
 };
 
 const TERRITORY = {
@@ -180,16 +166,11 @@ const TERRITORY = {
  garden: {name:"Фруктовый сад", x:-1, y:1, cost:110}
 };
 
-let s = {
-  food: 55, wood: 10, parts: 120, wave: 1,
-  buildings: { hq:1, farm:1, mill:1, barracks:1, wall:1 },
-  territory: { cleared: [] }
-};
-
+let s = { food: 55, wood: 10, parts: 120, wave: 1, buildings: { hq:1, farm:1, mill:1, barracks:1 }, territory: { cleared: [] } };
 let readyToCollect = { farm: true, mill: true };
 let tab="base", dockSize="normal", selectedObj=null;
 
-/* ================= 2. УПРАВЛЕНИЕ UI ================= */
+/* ================= УПРАВЛЕНИЕ UI ================= */
 function renderBase(){
   return `<div class="grid">${Object.entries(BUILD).map(([id,b])=>{
       const l=s.buildings[id];
@@ -205,7 +186,7 @@ function renderTerritory(){
       const done = s.territory.cleared.includes(id);
       return `<article class="card ${done?"selected":""}">
         <div class="card-title"><span>${p.name}</span></div>
-        <p>${done?"Сектор расчищен и под защитой.":"Сектор заблокирован зараженными."}</p>
+        <p>${done?"Сектор расчищен.":"Сектор заблокирован."}</p>
         <button ${done?"disabled":""} data-action="clear" data-id="${id}">${done?"Безопасно":"Исследовать (🪵 "+p.cost+")"}</button></article>`;
   }).join("")}</div>`;
 }
@@ -223,17 +204,32 @@ function renderUI(){
   $("hq-lvl").innerText = s.buildings.hq;
 }
 
-function pay(c){
-  if((c.food||0)>s.food || (c.wood||0)>s.wood) return false;
-  s.food-=(c.food||0); s.wood-=(c.wood||0); return true;
-}
-
-/* ================= 3. ПРЕМИАЛЬНЫЙ 2.5D CANVAS ДВИЖОК (TWD SURVIVORS) ================= */
+/* ================= 3. ПРЕМИАЛЬНЫЙ СТИЛИЗОВАННЫЙ РЕНДЕР (МУЛЬТЯШНЫЙ TWD) ================= */
 const canvas = $("world"), ctx = canvas.getContext("2d");
 let camera = { x: 0, y: 0, scale: 1.1 };
 let hits = [];
 
-// Перевод изометрических координат в экранные
+// 1. ГЕНЕРАТОРЫ ПРОЦЕДУРНЫХ ТЕКСТУР (ПАТТЕРНЫ)
+// Это магия, которая делает цвета "не плоскими", а зернистыми/текстурными.
+function createNoisePattern(baseColor, noiseOpacity, size=64) {
+    const pCanv = document.createElement('canvas');
+    pCanv.width = size; pCanv.height = size;
+    const pCtx = pCanv.getContext('2d');
+    pCtx.fillStyle = baseColor; pCtx.fillRect(0,0,size,size);
+    for(let i=0; i<400; i++) {
+        pCtx.fillStyle = `rgba(0,0,0,${Math.random() * noiseOpacity})`;
+        pCtx.fillRect(Math.random()*size, Math.random()*size, 2, 2);
+    }
+    return ctx.createPattern(pCanv, 'repeat');
+}
+let patternGrass, patternRoad, patternConcrete;
+function initPatterns() {
+    patternGrass = createNoisePattern("#4d5c41", 0.15); // Темно-зеленая трава
+    patternRoad = createNoisePattern("#363c42", 0.2); // Асфальт
+    patternConcrete = createNoisePattern("#5c636a", 0.1); // Бетон
+}
+
+// Перевод изометрических координат
 function iso(c, r) {
   const cx = canvas.width / 2 + camera.x;
   const cy = canvas.height / 2 - 80 + camera.y; 
@@ -242,203 +238,193 @@ function iso(c, r) {
   return { x: cx + (c - r) * tw, y: cy + (c + r) * th };
 }
 
-function poly(points, fill, stroke=null, lw=1) {
+// Отрисовка с жесткой обводкой (Сэл-шейдинг / Комикс стиль)
+function poly(points, fill, stroke="#111", lw=1.5) {
   ctx.beginPath();
   points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
   ctx.closePath();
   ctx.fillStyle = fill; ctx.fill();
-  if(stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+  if(stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw * camera.scale; ctx.lineJoin = "round"; ctx.stroke(); }
 }
 
-// 1. ОТРИСОВКА АСФАЛЬТА, ДОРОГ И ПЕРЕКРЕСТКА
+// ОБНОВЛЕННАЯ СЕТЬ ДОРОГ И ЗЕМЛЯ
 function drawRoadNetwork() {
-  // Асфальтовый перекресток как в TWD
   for(let r=-2; r<7; r++) {
     for(let c=-2; c<7; c++) {
       const p1 = iso(c, r), p2 = iso(c+1, r), p3 = iso(c+1, r+1), p4 = iso(c, r+1);
-      
-      // Дорожная полоса (Перекресток по центру)
       const isRoad = (c === 2 || r === 2);
       const isSidewalk = (c === 1 || c === 3 || r === 1 || r === 3);
 
       if (isRoad) {
-        poly([p1, p2, p3, p4], "#373c42", "#282c31", 1); // Тёмный асфальт
+        // Асфальт
+        poly([p1, p2, p3, p4], patternRoad, "#252a2e", 1);
         
-        // Разметка дорог
-        if (c === 2 && r !== 2) {
-          const m1 = iso(c+0.45, r+0.2), m2 = iso(c+0.55, r+0.2), m3 = iso(c+0.55, r+0.8), m4 = iso(c+0.45, r+0.8);
-          poly([m1, m2, m3, m4], "#d1a843"); // Желтая разметка
+        // Разметка - пешеходный переход (зебра)
+        if ((c===2 && (r===1 || r===3)) || (r===2 && (c===1 || c===3))) {
+          const m1 = iso(c+0.3, r+0.3), m2 = iso(c+0.7, r+0.3), m3 = iso(c+0.7, r+0.7), m4 = iso(c+0.3, r+0.7);
+          poly([m1, m2, m3, m4], "#e5e7eb", null);
+        } else if (c===2 && r!==2) {
+          // Разделительная желтая полоса
+          const m1 = iso(c+0.46, r+0.2), m2 = iso(c+0.54, r+0.2), m3 = iso(c+0.54, r+0.8), m4 = iso(c+0.46, r+0.8);
+          poly([m1, m2, m3, m4], "#eab308", null);
         }
       } else if (isSidewalk) {
-        poly([p1, p2, p3, p4], "#545b63", "#3f444c", 1); // Бетонные плиты тротуара
+        // Бетонный тротуар с толстой линией бордюра
+        poly([p1, p2, p3, p4], patternConcrete, "#374151", 1.5);
       } else {
-        // Газоны с сухой травой
-        poly([p1, p2, p3, p4], "#4e573e", "#3a4230", 1);
+        // Трава
+        poly([p1, p2, p3, p4], patternGrass, "#36452d", 1);
       }
     }
   }
 }
 
-// 2. ДЕТАЛИЗИРОВАННЫЕ ДЕРЕВЬЯ (Осенние лиственные и сосны)
-function drawTree(c, r, type="oak") {
+// ОБЪЕМНЫЕ МУЛЬТЯШНЫЕ ДЕРЕВЬЯ (Сфера из кругов)
+function drawBushyTree(c, r, type="autumn") {
   const p = iso(c, r);
   
-  // Тень на земле
-  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  // Тень
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
   ctx.beginPath(); ctx.ellipse(p.x, p.y, 16*camera.scale, 8*camera.scale, 0, 0, Math.PI*2); ctx.fill();
 
-  const h = 45 * camera.scale;
+  const h = 40 * camera.scale;
   // Ствол
   ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y - h);
-  ctx.strokeStyle = "#4a3525"; ctx.lineWidth = 4 * camera.scale; ctx.stroke();
+  ctx.strokeStyle = "#4a3320"; ctx.lineWidth = 4 * camera.scale; ctx.stroke();
 
-  // Крона дерева
-  if (type === "oak") {
-    // Оранжево-осеннее дубовое дерево
-    ctx.fillStyle = "#c86d3b";
-    ctx.beginPath(); ctx.arc(p.x - 8*camera.scale, p.y - h - 5*camera.scale, 14*camera.scale, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = "#e08d49";
-    ctx.beginPath(); ctx.arc(p.x + 6*camera.scale, p.y - h - 10*camera.scale, 16*camera.scale, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = "#aa5229";
-    ctx.beginPath(); ctx.arc(p.x, p.y - h + 5*camera.scale, 12*camera.scale, 0, Math.PI*2); ctx.fill();
-  } else {
-    // Зеленая ель / сосна
-    poly([{x: p.x-16*camera.scale, y: p.y-h+10*camera.scale}, {x: p.x+16*camera.scale, y: p.y-h+10*camera.scale}, {x: p.x, y: p.y-h-25*camera.scale}], "#2d4a34");
-    poly([{x: p.x-12*camera.scale, y: p.y-h-5*camera.scale}, {x: p.x+12*camera.scale, y: p.y-h-5*camera.scale}, {x: p.x, y: p.y-h-35*camera.scale}], "#3d6144");
+  // Рисуем пышную крону несколькими пересекающимися кругами с обводкой
+  const drawLeafBlob = (ox, oy, r, color) => {
+    ctx.beginPath(); ctx.arc(p.x + ox*camera.scale, p.y - h + oy*camera.scale, r*camera.scale, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = "#1a1f16"; ctx.lineWidth = 1.5 * camera.scale; ctx.stroke();
+  };
+
+  if (type === "autumn") {
+    drawLeafBlob(-8, -5, 14, "#c25e21");
+    drawLeafBlob(8, -12, 16, "#e58a2e");
+    drawLeafBlob(2, 5, 12, "#9c3b17");
+  } else { // Green pine/bush
+    drawLeafBlob(-8, 5, 12, "#2b4c30");
+    drawLeafBlob(8, 2, 14, "#3e6843");
+    drawLeafBlob(0, -10, 16, "#4a7c50");
   }
 }
 
-// 3. ЗДАНИЯ С ТЕКСТУРАМИ И РАЗРУШЕНИЯМИ (TWD SURVIVORS)
-function drawHQBuilding(x, y) {
-  const p1 = iso(x, y), p2 = iso(x+2, y), p3 = iso(x+2, y+2), p4 = iso(x, y+2);
-  const h = 50 * camera.scale;
-  const up = p => ({ x: p.x, y: p.y - h });
-
-  // Корпус ратуши / усадьбы
-  poly([p2, p3, up(p3), up(p2)], "#5c4a3e"); // Стена справа
-  poly([p4, p3, up(p3), up(p4)], "#756254"); // Стена слева
+// 3D Блок для постройки зданий
+function block3D(x, y, w, d, h, topColor, sideColor) {
+  const p1 = iso(x, y), p2 = iso(x+w, y), p3 = iso(x+w, y+d), p4 = iso(x, y+d);
+  const up = p => ({ x: p.x, y: p.y - h * camera.scale });
   
-  // Красная черепичная крыша с повреждениями
-  const rApex1 = iso(x+1, y); rApex1.y -= (h + 25*camera.scale);
-  const rApex2 = iso(x+1, y+2); rApex2.y -= (h + 25*camera.scale);
-
-  poly([up(p1), rApex1, rApex2, up(p4)], "#a84332", "#732b1e", 1.5); // Крыша слева
-  poly([up(p2), rApex1, rApex2, up(p3)], "#8c3222", "#5e2316", 1.5); // Крыша справа
-
-  // Дырка/разрушение в черепичной крыше (как на скрине TWD!)
-  const hole = iso(x+0.8, y+0.8); hole.y -= (h + 10*camera.scale);
-  ctx.fillStyle = "#291e19";
-  ctx.beginPath(); ctx.arc(hole.x, hole.y, 8*camera.scale, 0, Math.PI*2); ctx.fill();
-
-  // Белая колоннада и крыльцо
-  const porch = iso(x+1, y+2.1);
-  ctx.fillStyle = "#d1c7bd";
-  ctx.fillRect(porch.x - 12*camera.scale, porch.y - 25*camera.scale, 5*camera.scale, 20*camera.scale);
-  ctx.fillRect(porch.x + 8*camera.scale, porch.y - 25*camera.scale, 5*camera.scale, 20*camera.scale);
+  // В мультяшном стиле боковые грани рисуются с явной обводкой
+  poly([p2, p3, up(p3), up(p2)], sideColor, "#222", 1.5);
+  poly([p4, p3, up(p3), up(p4)], sideColor, "#222", 1.5);
+  poly([up(p1), up(p2), up(p3), up(p4)], topColor, "#222", 1.5);
 }
 
-function drawFarmBuilding(x, y) {
-  // Грядки с томатами и заборчик
-  for(let i=0; i<3; i++) {
-    const p1 = iso(x+0.2+i*0.4, y+0.2), p2 = iso(x+0.4+i*0.4, y+0.2), p3 = iso(x+0.4+i*0.4, y+1.3), p4 = iso(x+0.2+i*0.4, y+1.3);
-    poly([p1, p2, p3, p4], "#3d2b1f"); // Земля
-    
-    // Кусты томатов
-    const cp = iso(x+0.3+i*0.4, y+0.75);
-    ctx.fillStyle = "#486e38"; ctx.beginPath(); ctx.arc(cp.x, cp.y-6*camera.scale, 6*camera.scale, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = "#e0382b"; ctx.beginPath(); ctx.arc(cp.x+2, cp.y-7*camera.scale, 2.5*camera.scale, 0, Math.PI*2); ctx.fill(); // Томаты
+// РАТУША (МНОГОУРОВНЕВОЕ ЗДАНИЕ С РАЗРУШЕНИЕМ)
+function drawHQBuilding(x, y) {
+  const hBase = 25 * camera.scale;
+  
+  // Фундамент / Основной этаж
+  block3D(x+0.2, y+0.2, 1.6, 1.6, 25, "#82786d", "#63584e");
+  // Второй этаж
+  block3D(x+0.4, y+0.4, 1.2, 1.2, 45, "#968b7e", "#786d60");
+  
+  // Деревянное крыльцо с колоннами
+  block3D(x+1.6, y+0.7, 0.4, 0.6, 5, "#a89b87", "#877b69"); // Ступенька
+  
+  // Треугольная крыша с черепицей
+  const p1 = iso(x+0.3, y+0.3), p2 = iso(x+1.7, y+0.3), p3 = iso(x+1.7, y+1.7), p4 = iso(x+0.3, y+1.7);
+  const upBase = p => ({ x: p.x, y: p.y - 45*camera.scale });
+  const rApex1 = iso(x+1, y+0.3); rApex1.y -= 70*camera.scale;
+  const rApex2 = iso(x+1, y+1.7); rApex2.y -= 70*camera.scale;
+
+  // Левый скат крыши
+  poly([upBase(p1), rApex1, rApex2, upBase(p4)], "#b84f3d", "#222", 2);
+  // Правый скат крыши
+  poly([upBase(p2), rApex1, rApex2, upBase(p3)], "#8c3625", "#222", 2);
+
+  // Линии черепицы на правом скате
+  for(let i=1; i<4; i++) {
+    const m1 = { x: upBase(p2).x + (rApex1.x - upBase(p2).x)*(i/4), y: upBase(p2).y + (rApex1.y - upBase(p2).y)*(i/4) };
+    const m2 = { x: upBase(p3).x + (rApex2.x - upBase(p3).x)*(i/4), y: upBase(p3).y + (rApex2.y - upBase(p3).y)*(i/4) };
+    ctx.beginPath(); ctx.moveTo(m1.x, m1.y); ctx.lineTo(m2.x, m2.y); ctx.strokeStyle="#6b2516"; ctx.lineWidth=1; ctx.stroke();
   }
+
+  // Дыра в крыше с балками
+  const hole = iso(x+1.2, y+1.2); hole.y -= 58*camera.scale;
+  ctx.fillStyle = "#1a1614"; ctx.beginPath(); ctx.ellipse(hole.x, hole.y, 12*camera.scale, 6*camera.scale, -0.5, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = "#222"; ctx.lineWidth = 1.5; ctx.stroke();
+  // Балки внутри
+  ctx.beginPath(); ctx.moveTo(hole.x-5, hole.y-2); ctx.lineTo(hole.x+5, hole.y+2); ctx.strokeStyle="#5e412f"; ctx.lineWidth=2; ctx.stroke();
 }
 
-function drawYellowBusBarricade(x, y) {
-  // Перевернутый желтый школьный автобус на дороге (как в TWD)
-  const p1 = iso(x, y), p2 = iso(x+1.5, y), p3 = iso(x+1.5, y+0.6), p4 = iso(x, y+0.6);
-  const h = 18 * camera.scale;
-  const up = p => ({ x: p.x, y: p.y - h });
-
-  poly([p2, p3, up(p3), up(p2)], "#b88a1d");
-  poly([p4, p3, up(p3), up(p4)], "#d1a126");
-  poly([up(p1), up(p2), up(p3), up(p4)], "#eec132");
-
-  // Окна автобуса
-  const win = iso(x+0.7, y+0.3);
-  ctx.fillStyle = "#222"; ctx.fillRect(win.x - 15*camera.scale, win.y - h - 2*camera.scale, 25*camera.scale, 6*camera.scale);
+// АВТОБУС БАРРИКАДА
+function drawYellowBus(x, y) {
+  block3D(x, y, 1.4, 0.6, 18, "#d97706", "#b45309"); // Желтый кузов
+  block3D(x+0.1, y+0.1, 1.2, 0.4, 22, "#e5e7eb", "#9ca3af"); // Белая крыша
+  // Колеса (Сбоку)
+  const w1 = iso(x+0.3, y+0.6), w2 = iso(x+1.1, y+0.6);
+  ctx.fillStyle="#111"; 
+  ctx.beginPath(); ctx.ellipse(w1.x, w1.y-4*camera.scale, 5*camera.scale, 8*camera.scale, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(w2.x, w2.y-4*camera.scale, 5*camera.scale, 8*camera.scale, 0, 0, Math.PI*2); ctx.fill();
 }
 
-// 4. ТУМАН ВОЙНЫ И СОЛНЕЧНЫЙ БЛИК (ATMOSPHERE)
-function drawSunLightAndFog() {
-  // Проплывающие облака тумана по бокам
-  const time = Date.now() / 3000;
-  const fogGrad1 = ctx.createRadialGradient(canvas.width*0.1, canvas.height*0.2, 50, canvas.width*0.1, canvas.height*0.2, 350);
-  fogGrad1.addColorStop(0, "rgba(220, 225, 230, 0.45)");
-  fogGrad1.addColorStop(1, "rgba(220, 225, 230, 0)");
-  ctx.fillStyle = fogGrad1; ctx.beginPath(); ctx.arc(canvas.width*0.1 + Math.sin(time)*30, canvas.height*0.2, 350, 0, Math.PI*2); ctx.fill();
-
-  // Солнечный блик сверху (Lens Flare)
-  const sunX = canvas.width * 0.65, sunY = canvas.height * 0.15;
-  const sunGrad = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 300);
-  sunGrad.addColorStop(0, "rgba(255, 235, 170, 0.4)");
-  sunGrad.addColorStop(0.4, "rgba(255, 200, 120, 0.15)");
-  sunGrad.addColorStop(1, "transparent");
-  ctx.fillStyle = sunGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-// 5. ГЛАВНЫЙ ЦИКЛ РЕНДЕРА CANVAS
+// ОСНОВНОЙ РЕНДЕР
 function drawGame() {
+  if(!patternGrass) initPatterns(); // Инициализация текстур 1 раз
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   hits = [];
 
-  // 1. Сеть дорог и ландшафт
+  // 1. Рисуем текстурированную землю и дороги
   drawRoadNetwork();
 
-  // 2. Детали декораций (Перевернутый автобус, завалы)
-  drawYellowBusBarricade(2, 4.2);
+  // 2. Деревья на фоне и автобус
+  drawYellowBus(2, 4.2);
+  drawBushyTree(-0.5, 0.5, "autumn");
+  drawBushyTree(0.5, -0.5, "pine");
+  drawBushyTree(3.5, 0.5, "autumn");
+  drawBushyTree(-0.5, 3.5, "pine");
+  drawBushyTree(4.2, 3.8, "autumn");
 
-  // 3. Деревья на газонах (Сортировка глубины)
-  drawTree(-0.5, 0.5, "oak");
-  drawTree(0.5, -0.5, "pine");
-  drawTree(3.8, -0.5, "oak");
-  drawTree(-0.8, 3.5, "pine");
-  drawTree(4.2, 3.8, "oak");
-
-  // 4. Постройки
+  // 3. Здания (Пока только Ратуша, остальные можно добавить аналогично)
   drawHQBuilding(BUILD.hq.x, BUILD.hq.y);
-  drawFarmBuilding(BUILD.farm.x, BUILD.farm.y);
 
-  // Иконки сбора готовых ресурсов над зданиями
+  // Иконки сбора готовых ресурсов (С мультяшной обводкой)
   if (readyToCollect.farm) {
-    const center = iso(BUILD.farm.x + 0.75, BUILD.farm.y + 0.75);
-    const bubbleY = center.y - 45 * camera.scale + Math.sin(Date.now()/300)*4;
+    const center = iso(BUILD.hq.x + 1, BUILD.hq.y + 1);
+    const bubbleY = center.y - 85 * camera.scale + Math.sin(Date.now()/250)*4;
     
-    ctx.beginPath(); ctx.roundRect(center.x - 22*camera.scale, bubbleY - 12*camera.scale, 44*camera.scale, 24*camera.scale, 6*camera.scale);
-    ctx.fillStyle = "#e0382b"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.fillStyle = "#fff"; ctx.font = `bold ${12*camera.scale}px sans-serif`; ctx.textAlign="center";
-    ctx.fillText("🍅 55", center.x, bubbleY+4*camera.scale);
+    ctx.beginPath(); ctx.roundRect(center.x - 26*camera.scale, bubbleY - 14*camera.scale, 52*camera.scale, 28*camera.scale, 8*camera.scale);
+    ctx.fillStyle = "#fbbf24"; ctx.fill(); ctx.strokeStyle = "#111"; ctx.lineWidth = 2*camera.scale; ctx.stroke();
+    ctx.fillStyle = "#111"; ctx.font = `900 ${14*camera.scale}px sans-serif`; ctx.textAlign="center";
+    ctx.fillText("🍅 55", center.x, bubbleY+5*camera.scale);
     
     hits.push({ type: "collect", id: "farm", x: center.x, y: bubbleY, r: 30 * camera.scale });
   }
 
-  // Зоны клика по ратуше
-  const hqIso = iso(BUILD.hq.x + 1, BUILD.hq.y + 1);
-  hits.push({ type: "building", id: "hq", x: hqIso.x, y: hqIso.y - 30*camera.scale, r: 60 * camera.scale });
+  hits.push({ type: "building", id: "hq", x: iso(3,3).x, y: iso(3,3).y - 40*camera.scale, r: 60 * camera.scale });
 
-  // 5. Атмосферный туман и солнце
-  drawSunLightAndFog();
+  // 4. Солнечный блик и легкий атмосферный туман (Сверху)
+  const time = Date.now() / 2000;
+  const sunGrad = ctx.createRadialGradient(canvas.width*0.6, canvas.height*0.2, 10, canvas.width*0.6, canvas.height*0.2, 400);
+  sunGrad.addColorStop(0, "rgba(255, 240, 180, 0.25)");
+  sunGrad.addColorStop(0.5, "rgba(255, 200, 100, 0.05)");
+  sunGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = sunGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   requestAnimationFrame(drawGame);
 }
 
-/* ================= 4. КАМЕРА, СВАЙПЫ И КЛИКИ ================= */
+/* ================= 4. УПРАВЛЕНИЕ ================= */
 const layer = $("camera-layer");
 let isDragging = false, startX, startY, camStartX, camStartY, isClick = true;
 
 layer.addEventListener("pointerdown", e => {
-  isDragging = true; isClick = true;
-  startX = e.clientX; startY = e.clientY;
-  camStartX = camera.x; camStartY = camera.y;
-  layer.setPointerCapture(e.pointerId);
+  isDragging = true; isClick = true; startX = e.clientX; startY = e.clientY;
+  camStartX = camera.x; camStartY = camera.y; layer.setPointerCapture(e.pointerId);
 });
 
 layer.addEventListener("pointermove", e => {
@@ -464,11 +450,8 @@ layer.addEventListener("pointerup", e => {
     for(let i=hits.length-1; i>=0; i--) {
       const h = hits[i];
       if (Math.hypot(e.clientX - h.x, e.clientY - h.y) < h.r) {
-        if (h.type === "collect") {
-          flyResource(e.clientX, e.clientY); readyToCollect.farm = false;
-        } else {
-          selectedObj = h.id; tab = "base"; dockSize = "normal"; renderUI();
-        }
+        if (h.type === "collect") { flyResource(e.clientX, e.clientY); readyToCollect.farm = false; } 
+        else { selectedObj = h.id; tab = "base"; dockSize = "normal"; renderUI(); }
         return;
       }
     }
@@ -480,8 +463,8 @@ document.addEventListener("click", e => {
   const btnZoom = e.target.closest("[data-camera]");
   if(btnZoom) {
     const act = btnZoom.dataset.camera;
-    if(act === "in") camera.scale = Math.min(2.2, camera.scale * 1.2);
-    if(act === "out") camera.scale = Math.max(0.6, camera.scale / 1.2);
+    if(act === "in") camera.scale = Math.min(2.5, camera.scale * 1.25);
+    if(act === "out") camera.scale = Math.max(0.5, camera.scale / 1.25);
     if(act === "home") { camera.x = 0; camera.y = 0; camera.scale = 1.1; }
     return;
   }
@@ -489,10 +472,10 @@ document.addEventListener("click", e => {
   const a = b.dataset.action, id = b.dataset.id;
   if (a === "tab") { tab = id; renderUI(); }
   if (a === "collapse") { dockSize = dockSize==="map" ? "normal" : "map"; renderUI(); }
-  if (a === "build" && pay({wood: s.buildings[id]*50 || 10})) { s.buildings[id]++; renderUI(); }
+  if (a === "build" && s.wood >= (s.buildings[id]*50||10)) { s.wood-=(s.buildings[id]*50||10); s.buildings[id]++; renderUI(); }
 });
 
-/* ================= 5. ЗАПУСК ИГРЫ ================= */
+/* ================= 5. ЗАПУСК ================= */
 renderUI();
 requestAnimationFrame(drawGame);
 </script>
