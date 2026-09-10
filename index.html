@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TWD Survivors - Full Isometric Clone</title>
+  <style>
+    /* ==========================================================================
+       БАЗОВЫЕ НАСТРОЙКИ
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #121517; /* Темный фон из оригинального скрина */
+      color: #ffffff;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100vw;
+      max-width: 480px;
+      height: 100vh;
+      position: relative;
+      background: radial-gradient(circle at top, #1c2227 0%, #121517 100%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       ВЕРХНИЙ ИНТЕРФЕЙС (HUD)
+       ========================================================================== */
+    .header {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    /* Профиль игрока */
+    .profile-badge {
+      display: flex;
+      align-items: center;
+      background: rgba(18, 21, 23, 0.85);
+      border: 1px solid #f0a500;
+      border-radius: 40px;
+      padding: 4px 16px 4px 4px;
+      gap: 10px;
+      pointer-events: auto;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+    }
+
+    .profile-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 2px solid #f0a500;
+      object-fit: cover;
+    }
+
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .profile-level {
+      font-size: 10px;
+      color: #f0a500;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .profile-power {
+      font-size: 18px;
+      font-weight: 900;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: -2px;
+    }
+
+    /* Панель ресурсов (2 строки) */
+    .resources-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+      pointer-events: auto;
+    }
+
+    .resources-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .res-pill {
+      background: rgba(18, 21, 23, 0.85);
+      border: 1px solid #2d3339;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+    }
+
+    .res-food { color: #a5d6a7; }
+    .res-wood { color: #d7ccc8; }
+    .res-gear { color: #b0bec5; }
+    .res-diam { color: #81d4fa; }
+
+    /* Виджет Сюжета (Глава) */
+    .chapter-widget {
+      position: absolute;
+      top: 85px;
+      left: 15px;
+      background: rgba(18, 21, 23, 0.85);
+      border: 1px solid #2d3339;
+      border-radius: 12px;
+      padding: 6px 14px 6px 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 100;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    }
+
+    .chapter-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .chapter-texts {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chapter-subtitle {
+      font-size: 11px;
+      color: #8a949e;
+    }
+
+    .chapter-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    /* ==========================================================================
+       ИЗОМЕТРИЧЕСКАЯ КАРТА И 3D КУБЫ
+       ========================================================================== */
+    .map-viewport {
+      flex: 1;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      perspective: 1500px; /* Глубина перспективы */
+      margin-top: 40px;
+    }
+
+    .isometric-grid {
+      position: relative;
+      width: 350px;
+      height: 350px;
+      /* Тот самый угол наклона изометрии */
+      transform: rotateX(60deg) rotateZ(-45deg);
+      transform-style: preserve-3d;
+    }
+
+    /* Земляная плитка */
+    .tile {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      background: #252d27; /* Темно-зеленый цвет сетки */
+      border: 1px solid #1a201c;
+      transform-style: preserve-3d;
+    }
+
+    /* Плитка в тумане */
+    .tile.fog {
+      background: #181d1a;
+    }
+
+    /* Иконка замка на тумане */
+    .tile.fog::after {
+      content: "🔒";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      font-size: 20px;
+      /* Разворачиваем иконку к зрителю */
+      transform: translate(-50%, -50%) rotateZ(45deg) rotateX(-60deg);
+      filter: drop-shadow(0 0 5px rgba(240, 165, 0, 0.6));
+    }
+
+    /* 3D КУБ (Здание) */
+    .cube {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.2s ease;
+      cursor: pointer;
+    }
+
+    .cube:active {
+      transform: scale(0.95);
+    }
+
+    /* Грани куба */
+    .face {
+      position: absolute;
+      backface-visibility: hidden;
+    }
+
+    /* Крыша (Верхняя грань) */
+    .face-top {
+      width: 70px;
+      height: 70px;
+      transform: translateZ(40px); /* Высота куба */
+    }
+
+    /* Левая боковая грань */
+    .face-left {
+      width: 70px;
+      height: 40px;
+      transform-origin: top;
+      transform: rotateX(-90deg) translateZ(70px);
+      filter: brightness(0.6); /* Тень */
+    }
+
+    /* Правая боковая грань */
+    .face-right {
+      width: 40px;
+      height: 70px;
+      transform-origin: left;
+      transform: rotateY(90deg) translateZ(70px);
+      filter: brightness(0.8); /* Полутень */
+    }
+
+    /* Цвета для разных типов зданий */
+    .cube-hq .face-top { background: #3a4146; border: 1px solid #5a656e; }
+    .cube-hq .face-left { background: #3a4146; }
+    .cube-hq .face-right { background: #3a4146; }
+
+    .cube-farm .face-top { background: #627b5b; border: 1px solid #7d9e74; }
+    .cube-farm .face-left { background: #627b5b; }
+    .cube-farm .face-right { background: #627b5b; }
+
+    .cube-sawmill .face-top { background: #7b5b48; border: 1px solid #9e745c; }
+    .cube-sawmill .face-left { background: #7b5b48; }
+    .cube-sawmill .face-right { background: #7b5b48; }
+
+    .cube-barracks .face-top { background: #455246; border: 1px solid #5a6b5c; }
+    .cube-barracks .face-left { background: #455246; }
+    .cube-barracks .face-right { background: #455246; }
+
+    /* Значок сбора ресурса над кубом */
+    .collect-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      background: #f0a500;
+      color: #000;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 900;
+      /* Разворачиваем к камере и поднимаем над крышей */
+      transform: translate(-50%, -50%) rotateZ(45deg) rotateX(-60deg) translateY(-40px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      animation: floatBadge 1s ease-in-out infinite alternate;
+      cursor: pointer;
+      pointer-events: auto;
+      z-index: 50;
+      white-space: nowrap;
+    }
+
+    @keyframes floatBadge {
+      from { transform: translate(-50%, -50%) rotateZ(45deg) rotateX(-60deg) translateY(-40px); }
+      to { transform: translate(-50%, -50%) rotateZ(45deg) rotateX(-60deg) translateY(-48px); }
+    }
+
+    /* Анимация полета ресурса в HUD */
+    .flying-particle {
+      position: fixed;
+      background: #f0a500;
+      color: #000;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 9999;
+      pointer-events: none;
+      transition: all 0.8s cubic-bezier(0.25, 1, 0.3, 1);
+      box-shadow: 0 0 15px rgba(240, 165, 0, 0.8);
+    }
+
+    /* ==========================================================================
+       НИЖНИЕ ПАНЕЛИ (Вкладки, Карточки, Навигация)
+       ========================================================================== */
+    .bottom-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      background: #16191c;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      padding-top: 15px;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+      z-index: 100;
+    }
+
+    /* Вкладки (Жители, Торговля, Развитие) */
+    .middle-tabs {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      margin-bottom: 15px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: #1e2227;
+      border: 1px solid #2d3339;
+      color: #a0aab2;
+      padding: 12px 0;
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .tab-btn:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+    .tab-btn:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+    .tab-btn.active { color: #fff; background: #252a30; }
+
+    /* Горизонтальный скролл карточек зданий */
+    .cards-slider {
+      display: flex;
+      gap: 15px;
+      padding: 0 20px 20px 20px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .cards-slider::-webkit-scrollbar { display: none; }
+
+    .building-card {
+      min-width: 160px;
+      background: #1e2227;
+      border: 1px solid #2d3339;
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .bc-title { font-size: 16px; font-weight: bold; color: #ffffff; }
+    .bc-lvl { font-size: 10px; color: #f0a500; background: rgba(240, 165, 0, 0.1); padding: 2px 6px; border-radius: 4px; }
+    .bc-desc { font-size: 12px; color: #8a949e; line-height: 1.4; margin-bottom: 15px; flex: 1; }
+
+    .bc-btn {
+      background: transparent;
+      border: 1px solid #f0a500;
+      color: #f0a500;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Самая нижняя навигация */
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: #121517;
+      height: 70px;
+      border-top: 1px solid #1e2227;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: #6a7682;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .nav-item.active { color: #f0a500; }
+    .nav-icon { font-size: 22px; }
+
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ВЕРХНИЙ ИНТЕРФЕЙС (HUD) -->
+  <div class="header">
+    <div class="profile-badge">
+      <!-- Аватарка из вашего примера -->
+      <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80" class="profile-avatar" alt="Avatar">
+      <div class="profile-info">
+        <div class="profile-level">БАЗА УР. 1</div>
+        <div class="profile-power">⚔️ <span id="val-power">57</span></div>
+      </div>
+    </div>
+
+    <div class="resources-panel">
+      <div class="resources-row">
+        <div class="res-pill res-food" id="hud-food">🌾 <span id="val-food">5 900</span></div>
+        <div class="res-pill res-wood" id="hud-wood">🪵 <span id="val-wood">4 300</span></div>
+      </div>
+      <div class="resources-row">
+        <div class="res-pill res-gear">⚙️ 120</div>
+        <div class="res-pill res-diam">💎 90</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВИДЖЕТ ГЛАВЫ -->
+  <div class="chapter-widget">
+    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="chapter-avatar" alt="Chapter">
+    <div class="chapter-texts">
+      <div class="chapter-subtitle">Глава 1</div>
+      <div class="chapter-title">Сигнал в темноте</div>
+    </div>
+  </div>
+
+  <!-- ИГРОВОЙ МИР (ИЗОМЕТРИЯ) -->
+  <div class="map-viewport">
+    <div class="isometric-grid" id="iso-grid">
+      <!-- Плитки и кубы генерируются через JavaScript -->
+    </div>
+  </div>
+
+  <!-- НИЖНЯЯ ПАНЕЛЬ С КАРТОЧКАМИ -->
+  <div class="bottom-section">
+    <div class="middle-tabs">
+      <div class="tab-btn">🧑 Жители</div>
+      <div class="tab-btn">⚖️ Торговля</div>
+      <div class="tab-btn active">⚙️ Развитие</div>
+    </div>
+
+    <div class="cards-slider">
+      <!-- Карточка Штаба -->
+      <div class="building-card">
+        <div class="bc-header">
+          <span class="bc-title">Штаб</span>
+          <span class="bc-lvl">Ур.1</span>
+        </div>
+        <div class="bc-desc">Добыча ресурсов и открытие технологий.</div>
+        <button class="bc-btn">Улучшить (🪵 50)</button>
+      </div>
+
+      <!-- Карточка Теплицы -->
+      <div class="building-card">
+        <div class="bc-header">
+          <span class="bc-title">Теплицы</span>
+          <span class="bc-lvl">Ур.1</span>
+        </div>
+        <div class="bc-desc">Добыча ресурсов и открытие технологий.</div>
+        <button class="bc-btn">Улучшить (🪵 50)</button>
+      </div>
+
+      <!-- Карточка Лесопилки -->
+      <div class="building-card">
+        <div class="bc-header">
+          <span class="bc-title">Лесопилка</span>
+          <span class="bc-lvl">Ур.1</span>
+        </div>
+        <div class="bc-desc">Добыча ресурсов и открытие технологий.</div>
+        <button class="bc-btn">Улучшить (🪵 50)</button>
+      </div>
+      
+      <!-- Карточка Казармы -->
+      <div class="building-card">
+        <div class="bc-header">
+          <span class="bc-title">Казарма</span>
+          <span class="bc-lvl">Ур.1</span>
+        </div>
+        <div class="bc-desc">Добыча ресурсов и открытие технологий.</div>
+        <button class="bc-btn">Улучшить (🪵 50)</button>
+      </div>
+    </div>
+
+    <!-- Навигация в самом низу -->
+    <div class="bottom-nav">
+      <div class="nav-item active"><span class="nav-icon">⌂</span>База</div>
+      <div class="nav-item"><span class="nav-icon">▧</span>Земли</div>
+      <div class="nav-item"><span class="nav-icon">★</span>Герои</div>
+      <div class="nav-item"><span class="nav-icon">⚑</span>Армия</div>
+      <div class="nav-item"><span class="nav-icon">🌍</span>Карта</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ==========================================================================
+     ЛОГИКА ИГРЫ И ГЕНЕРАЦИЯ КАРТЫ
+     ========================================================================== */
+  
+  // Данные баланса
+  let playerFood = 5900;
+  let playerWood = 4300;
+
+  // Формируем карту в виде ромба (как на скринах)
+  // col, row: координаты в сетке
+  const mapData = [
+    // Дальние углы в тумане
+    { col: 2, row: 0, fog: true },
+    { col: 0, row: 2, fog: true },
+    { col: 4, row: 2, fog: true },
+    { col: 2, row: 4, fog: true },
+
+    // Пустые клетки вокруг центра
+    { col: 2, row: 1, type: 'empty' },
+    { col: 1, row: 2, type: 'empty' },
+    { col: 3, row: 2, type: 'empty' },
+    { col: 2, row: 3, type: 'empty' },
+
+    // Центральные Здания (Кубы)
+    { col: 2, row: 2, type: 'building', bType: 'hq' }, // Центр - Штаб (Серый куб)
+    { col: 1, row: 3, type: 'building', bType: 'farm', resource: '🌾 150', resType: 'food', amount: 150 }, // Зеленый куб с едой
+    { col: 3, row: 1, type: 'building', bType: 'sawmill', resource: '🪵 80', resType: 'wood', amount: 80 }, // Коричневый куб с деревом
+    { col: 1, row: 1, type: 'building', bType: 'barracks' } // Темный куб (Казарма)
+  ];
+
+  const gridElement = document.getElementById('iso-grid');
+  const tileSize = 70; // Размер одной клетки
+
+  // Функция создания карты
+  function renderMap() {
+    gridElement.innerHTML = '';
+
+    mapData.forEach((tile) => {
+      // Создаем обертку плитки
+      const tileDiv = document.createElement('div');
+      tileDiv.className = 'tile';
+      if (tile.fog) tileDiv.classList.add('fog');
+
+      // Позиционируем в 2D сетке (Изометрия делает CSS transform)
+      tileDiv.style.left = `${tile.col * tileSize}px`;
+      tileDiv.style.top = `${tile.row * tileSize}px`;
+
+      // Если это здание - создаем 3D КУБ
+      if (tile.type === 'building') {
+        const cube = document.createElement('div');
+        cube.className = `cube cube-${tile.bType}`;
+        
+        // 3 Грани куба
+        cube.innerHTML = `
+          <div class="face face-top"></div>
+          <div class="face face-left"></div>
+          <div class="face face-right"></div>
+        `;
+
+        // Если у здания есть готовый ресурс - вешаем плашку сбора
+        if (tile.resource) {
+          const badge = document.createElement('div');
+          badge.className = 'collect-badge';
+          badge.innerText = tile.resource;
+          
+          // Обработка клика по плашке
+          badge.onclick = (e) => {
+            e.stopPropagation(); // Чтобы не кликнулось само здание
+            collectResource(tile, badge);
+          };
+          cube.appendChild(badge);
+        }
+
+        tileDiv.appendChild(cube);
+      }
+
+      gridElement.appendChild(tileDiv);
+    });
+  }
+
+  // Функция сбора ресурса (Анимация полета)
+  function collectResource(tile, badgeElement) {
+    const amount = tile.amount;
+    const isFood = tile.resType === 'food';
+    
+    // Получаем координаты клика/плашки на экране
+    const badgeRect = badgeElement.getBoundingClientRect();
+    
+    // Получаем координаты цели (Верхняя панель ресурсов)
+    const targetId = isFood ? 'hud-food' : 'hud-wood';
+    const targetRect = document.getElementById(targetId).getBoundingClientRect();
+
+    // Создаем летящую частицу
+    const particle = document.createElement('div');
+    particle.className = 'flying-particle';
+    particle.innerText = `+${amount}`;
+    
+    // Стартовая позиция
+    particle.style.left = `${badgeRect.left}px`;
+    particle.style.top = `${badgeRect.top}px`;
+    document.body.appendChild(particle);
+
+    // Удаляем ресурс с куба
+    tile.resource = null;
+    badgeElement.remove();
+
+    // Запускаем анимацию полета к HUD
+    requestAnimationFrame(() => {
+      particle.style.left = `${targetRect.left + 20}px`;
+      particle.style.top = `${targetRect.top}px`;
+      particle.style.transform = 'scale(0.5)';
+      particle.style.opacity = '0.3';
+    });
+
+    // По окончании анимации
+    setTimeout(() => {
+      particle.remove();
+      
+      // Обновляем баланс
+      if (isFood) {
+        playerFood += amount;
+        document.getElementById('val-food').innerText = formatNumber(playerFood);
+      } else {
+        playerWood += amount;
+        document.getElementById('val-wood').innerText = formatNumber(playerWood);
+      }
+    }, 800);
+  }
+
+  // Форматирование чисел (например: 5900 -> 5 900)
+  function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  }
+
+  // Инициализация при загрузке
+  renderMap();
+
+</script>
+
+</body>
+</html>
