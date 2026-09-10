@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#101316">
+<title>The Last Port - Survivors</title>
+<style>
+/* ================= UI ТЕМА (TWD:S Style) ================= */
+:root {
+  color-scheme: dark;
+  --text: #e8e8e8; --muted: #7b8c9d; --gold: #f4b136;
+  --bg-main: #101316; --bg-card: #1c2127; --border: #2c353f; --height: 100dvh;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); }
+button { font: inherit; cursor: pointer; border: none; outline: none; transition: transform 0.1s; }
+button:active { transform: scale(0.96); }
+button:disabled { opacity: 0.5; filter: grayscale(1); pointer-events: none; }
+[hidden] { display: none !important; }
+
+/* ================= СЛОИ И КАРТА ================= */
+main { position: relative; width: 100%; height: var(--height); overflow: hidden; }
+.scene { position: absolute; inset: 0; z-index: 1; background: #0c1013; }
+canvas { display: block; touch-action: none; }
+#camera-layer { position: absolute; inset: 0; z-index: 2; touch-action: none; }
+
+/* ================= ВЕРХНИЙ HUD ================= */
+.ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 10px); }
+header { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 15px; pointer-events: auto; }
+
+.profile-badge { display: flex; align-items: center; gap: 10px; background: rgba(16, 19, 22, 0.85); border: 1px solid var(--gold); border-radius: 40px; padding: 4px 16px 4px 4px; backdrop-filter: blur(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.profile-avatar { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; }
+.profile-info { display: flex; flex-direction: column; }
+.profile-level { font-size: 9px; color: var(--gold); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.profile-power { font-size: 16px; font-weight: 900; margin-top: -2px; }
+
+.resources { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.res-item { background: rgba(16, 19, 22, 0.85); border: 1px solid var(--border); border-radius: 12px; padding: 6px 12px; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); backdrop-filter: blur(5px); }
+.res-food { color: #a5d6a7; } .res-wood { color: #d7ccc8; } .res-parts { color: #b0bec5; } .res-wave { color: #81d4fa; }
+
+#chapter-strip { align-self: flex-start; margin: 5px 15px; background: rgba(16, 19, 22, 0.85); border: 1px solid var(--border); border-radius: 12px; padding: 8px 15px 8px 8px; display: flex; align-items: center; gap: 10px; pointer-events: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+.chapter-avatar { width: 36px; height: 36px; border-radius: 8px; background: #262c33; display: grid; place-items: center; font-size: 18px; color: var(--gold); }
+.chapter-copy small { display: block; font-size: 10px; color: var(--muted); }
+.chapter-copy strong { font-size: 13px; color: #fff; }
+
+.camera-controls { position: absolute; right: 15px; top: 45%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+.camera-controls button { width: 44px; height: 44px; border-radius: 50%; background: rgba(28, 33, 39, 0.9); border: 1px solid var(--border); color: #fff; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.camera-controls .primary { border-color: var(--gold); color: var(--gold); }
+
+/* ================= НИЖНЯЯ ПАНЕЛЬ И НАВИГАЦИЯ ================= */
+#dock { margin-top: auto; background: var(--bg-main); border-top-left-radius: 24px; border-top-right-radius: 24px; pointer-events: auto; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); height: 45dvh; transition: 0.3s; z-index: 100; border-top: 1px solid var(--border); }
+#dock[data-size="map"] { height: auto; padding-bottom: env(safe-area-inset-bottom, 20px); }
+
+.toolbar { display: flex; gap: 8px; padding: 15px; overflow-x: auto; scrollbar-width: none; }
+.toolbar::-webkit-scrollbar { display: none; }
+.toolbar button { background: var(--bg-card); border: 1px solid var(--border); color: var(--muted); padding: 10px 16px; border-radius: 12px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+.toolbar button.active { background: #2c353f; color: #fff; border-color: #3d4957; }
+.size-btn { width: 40px; padding: 0 !important; display: grid; place-items: center; font-size: 18px; }
+
+#panel { flex: 1; overflow-y: auto; padding: 0 15px 15px; scrollbar-width: none; }
+#panel::-webkit-scrollbar { display: none; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
+.card.selected { border-color: var(--gold); background: #252b31; }
+
+.card-title { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 4px; }
+.card-lvl { font-size: 10px; color: var(--gold); background: rgba(244, 177, 54, 0.15); padding: 3px 8px; border-radius: 6px; }
+.card p { font-size: 11px; color: var(--muted); line-height: 1.4; margin: 0; flex: 1; }
+
+.card > button { background: transparent; border: 1px solid var(--gold); color: var(--gold); padding: 10px; border-radius: 10px; font-weight: bold; font-size: 12px; margin-top: auto; }
+.card > button.primary { background: var(--gold); color: #000; }
+
+nav { display: flex; justify-content: space-around; background: #0c0f12; padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); flex-shrink: 0; }
+nav button { background: none; color: #5a6673; font-size: 10px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+nav button.active { color: var(--gold); }
+nav button b { font-size: 20px; }
+
+/* Анимации частиц */
+.fly-res { position: absolute; z-index: 9999; font-weight: bold; font-size: 14px; color: #fff; text-shadow: 0 2px 4px #000; pointer-events: none; transition: 0.8s cubic-bezier(0.2, 1, 0.3, 1); }
+</style>
+</head>
+<body>
+<main>
+  <!-- CANVAS СЛОЙ -->
+  <div class="scene">
+    <canvas id="world"></canvas>
+    <div id="camera-layer"></div>
+  </div>
+
+  <!-- UI СЛОЙ -->
+  <div class="ui-layer">
+    <header>
+      <div class="profile-badge">
+        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80" class="profile-avatar">
+        <div class="profile-info">
+          <span class="profile-level">База ур. <span id="hq-lvl">1</span></span>
+          <span class="profile-power">⚔ <span id="power">0</span></span>
+        </div>
+      </div>
+      
+      <div class="resources">
+        <div class="res-item res-food" id="btn-food">🌾 <span id="food">0</span></div>
+        <div class="res-item res-wood" id="btn-wood">🪵 <span id="wood">0</span></div>
+        <div class="res-item res-parts">⚙ <span id="parts">0</span></div>
+        <div class="res-item res-wave">🌊 <span id="wave">1</span></div>
+      </div>
+    </header>
+
+    <button id="chapter-strip">
+      <div class="chapter-avatar">⌖</div>
+      <div class="chapter-copy"><small>Глава 1</small><strong>Сигнал в темноте</strong></div>
+    </button>
+
+    <div class="camera-controls">
+      <button data-camera="in">＋</button>
+      <button data-camera="out">−</button>
+      <button class="primary" data-camera="home">⌂</button>
+      <button>?</button>
+    </div>
+
+    <!-- DOCK ПАНЕЛЬ -->
+    <section id="dock" data-size="normal">
+      <div class="toolbar">
+        <button class="active">♙ Жители</button>
+        <button>⚖ Торговля</button>
+        <button>⚙ Развитие</button>
+        <button class="size-btn" data-action="collapse">▾</button>
+      </div>
+      
+      <div id="panel"></div>
+
+      <nav>
+        <button data-action="tab" data-id="base" class="active"><b>⌂</b>База</button>
+        <button data-action="tab" data-id="territory"><b>▧</b>Земли</button>
+        <button data-action="tab" data-id="heroes"><b>★</b>Герои</button>
+        <button data-action="tab" data-id="army"><b>⚑</b>Войска</button>
+        <button data-action="tab" data-id="map"><b>⌖</b>Карта</button>
+        <button data-action="tab" data-id="battle"><b>⚔</b>Оборона</button>
+      </nav>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const fmt = n => new Intl.NumberFormat("ru-RU").format(Math.floor(n||0));
+
+/* ================= 1. БАЗА ДАННЫХ И ЛОГИКА ================= */
+const BUILD = {
+ hq: {name:"Штаб", x:2, y:2, w:1.5, d:1.5},
+ farm: {name:"Теплицы", x:0, y:2, w:1.5, d:1.5},
+ mill: {name:"Лесопилка", x:2, y:0, w:1.5, d:1.5},
+ barracks: {name:"Казармы", x:4, y:2, w:1.5, d:1.5},
+ wall: {name:"Периметр", x:2, y:4, w:1.5, d:1.5}
+};
+const TERRITORY = {
+ grove: {name:"Заросший сквер", x:-1, y:-1, cost:30},
+ scrapyard: {name:"Свалка машин", x:1, y:-1, cost:80},
+ garden: {name:"Старые сады", x:-1, y:1, cost:110}
+};
+
+let s = {
+  food: 5900, wood: 4300, parts: 120, wave: 1,
+  buildings: { hq:1, farm:1, mill:1, barracks:1, wall:1 },
+  territory: { cleared: [] }
+};
+
+let readyToCollect = { farm: false, mill: false };
+setInterval(() => {
+  if(s.buildings.farm) readyToCollect.farm = true;
+  if(s.buildings.mill) readyToCollect.mill = true;
+}, 5000); // Ресурсы появляются раз в 5 секунд
+
+let tab="base", dockSize="normal", selectedObj=null;
+
+/* ================= 2. РЕНДЕР UI ================= */
+function renderBase(){
+  return `<div class="grid">${Object.entries(BUILD).map(([id,b])=>{
+      const l=s.buildings[id];
+      return `<article class="card ${selectedObj===id?"selected":""}">
+        <div class="card-title"><span>${b.name}</span><span class="card-lvl">${l?`Ур. ${l}`:"Строится"}</span></div>
+        <p>${id==="farm"?"Добыча еды.":id==="mill"?"Добыча дерева.":"Развитие базы."}</p>
+        <button data-action="build" data-id="${id}">Улучшить (🪵 ${l*50})</button></article>`;
+  }).join("")}</div>`;
+}
+
+function renderTerritory(){
+  return `<div class="grid">${Object.entries(TERRITORY).map(([id,p])=>{
+      const done = s.territory.cleared.includes(id);
+      return `<article class="card ${done?"selected":""}">
+        <div class="card-title"><span>${p.name}</span></div>
+        <p>${done?"Освоено. Можно строить.":"Очистка от зомби."}</p>
+        <button ${done?"disabled":""} data-action="clear" data-id="${id}">${done?"Территория ваша":"Очистить (🪵 "+p.cost+")"}</button></article>`;
+  }).join("")}</div>`;
+}
+
+function renderUI(){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active", b.dataset.id===tab));
+  $("dock").dataset.size = dockSize;
+  
+  if(tab==="base") $("panel").innerHTML = renderBase();
+  else if(tab==="territory") $("panel").innerHTML = renderTerritory();
+  else $("panel").innerHTML = `<p style="text-align:center; color:gray; margin-top:20px;">Раздел в разработке</p>`;
+  
+  $("food").innerText = fmt(s.food);
+  $("wood").innerText = fmt(s.wood);
+  $("parts").innerText = fmt(s.parts);
+  $("hq-lvl").innerText = s.buildings.hq;
+  $("power").innerText = "57";
+}
+
+/* ================= 3. ПРОДВИНУТЫЙ РЕНДЕР CANVAS ================= */
+const canvas = $("world"), ctx = canvas.getContext("2d");
+let camera = { x: 0, y: 0, scale: 1.2 };
+let hits = []; 
+
+function iso(c, r) {
+  const cx = canvas.width / 2 + camera.x;
+  const cy = canvas.height / 2 - 100 + camera.y; 
+  const tw = 60 * camera.scale;
+  const th = 30 * camera.scale;
+  return { x: cx + (c - r) * tw, y: cy + (c + r) * th };
+}
+
+function poly(points, fill, stroke, lw=1) {
+  ctx.beginPath();
+  points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+  ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill();
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+
+function block(c, r, w, d, h, topColor, sideLeft, sideRight) {
+  const p1 = iso(c, r), p2 = iso(c+w, r), p3 = iso(c+w, r+d), p4 = iso(c, r+d);
+  const up = p => ({ x: p.x, y: p.y - h * camera.scale });
+  poly([p2, p3, up(p3), up(p2)], sideRight, "#111");
+  poly([p4, p3, up(p3), up(p4)], sideLeft, "#111");
+  poly([up(p1), up(p2), up(p3), up(p4)], topColor, "#333");
+}
+
+function drawDetailedBuilding(id, x, y) {
+  if (id === "hq") {
+    block(x+0.1, y+0.1, 1.3, 1.3, 30, "#4a545e", "#3a424a", "#292f35");
+    block(x+0.3, y+0.3, 0.9, 0.9, 45, "#58636e", "#454f59", "#323941");
+    const ant = iso(x+0.8, y+0.8);
+    ctx.beginPath(); ctx.moveTo(ant.x, ant.y-45*camera.scale); ctx.lineTo(ant.x, ant.y-80*camera.scale); ctx.strokeStyle="#aaa"; ctx.lineWidth=2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(ant.x, ant.y-80*camera.scale, 3, 0, Math.PI*2); ctx.fillStyle="#f00"; ctx.fill();
+  }
+  else if (id === "farm") {
+    block(x+0.1, y+0.1, 0.6, 1.3, 15, "#5d7a8c", "#415968", "#2a3d49");
+    block(x+0.8, y+0.1, 0.6, 1.3, 15, "#5d7a8c", "#415968", "#2a3d49");
+  }
+  else if (id === "mill") {
+    block(x+0.2, y+0.2, 1.1, 1.1, 5, "#5c4a3d", "#45362b", "#2e231b"); 
+    block(x+0.3, y+0.3, 0.3, 0.8, 12, "#7a6250", "#5c4a3d", "#403328"); 
+    block(x+0.8, y+0.3, 0.4, 0.4, 25, "#3d4957", "#2b343e", "#1b2229");
+  }
+  else if (id === "barracks") {
+    block(x+0.1, y+0.1, 0.7, 0.7, 20, "#4a6345", "#354731", "#222e1f");
+    block(x+0.7, y+0.7, 0.7, 0.7, 20, "#4a6345", "#354731", "#222e1f");
+  }
+  else if (id === "wall") {
+    block(x+0.4, y+0.4, 0.7, 0.7, 40, "#6e5d4a", "#524435", "#362c21");
+  }
+
+  // Значок готовности ресурса
+  if ((id === "farm" && readyToCollect.farm) || (id === "mill" && readyToCollect.mill)) {
+    const center = iso(x+0.75, y+0.75);
+    const bubbleY = center.y - 50 * camera.scale + Math.sin(Date.now()/300)*5; 
+    
+    ctx.beginPath(); ctx.roundRect(center.x - 25*camera.scale, bubbleY - 12*camera.scale, 50*camera.scale, 24*camera.scale, 10*camera.scale);
+    ctx.fillStyle = "#f0a500"; ctx.fill();
+    ctx.fillStyle = "#000"; ctx.font = `bold ${12*camera.scale}px sans-serif`; ctx.textAlign="center";
+    ctx.fillText(id==="farm"?"🌾 15":"🪵 10", center.x, bubbleY+4*camera.scale);
+    
+    hits.push({ type: "collect", id: id, x: center.x, y: bubbleY, r: 35 * camera.scale });
+  }
+
+  const cIso = iso(x+0.75, y+0.75);
+  hits.push({ type: "building", id: id, x: cIso.x, y: cIso.y, r: 40 * camera.scale });
+}
+
+function drawGame() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hits = [];
+
+  // Земля
+  for(let r=-2; r<8; r++) {
+    for(let c=-2; c<8; c++) {
+      const p1 = iso(c, r), p2 = iso(c+1, r), p3 = iso(c+1, r+1), p4 = iso(c, r+1);
+      poly([p1, p2, p3, p4], "#2a312a", "#3b453b", 1);
+    }
+  }
+
+  // Туман (закрытые земли)
+  for(const [id, t] of Object.entries(TERRITORY)) {
+    if (!s.territory.cleared.includes(id)) {
+      block(t.x, t.y, 2, 2, 25, "#14171a", "#0d1012", "#0a0c0e");
+      const center = iso(t.x+1, t.y+1);
+      ctx.font = `${18 * camera.scale}px Arial`; ctx.textAlign = "center";
+      ctx.fillText("🔒", center.x, center.y - 30 * camera.scale);
+      hits.push({ type: "land", id: id, x: center.x, y: center.y - 20, r: 40 * camera.scale });
+    }
+  }
+
+  // Здания
+  const blds = Object.entries(BUILD).sort((a,b) => (a[1].x+a[1].y) - (b[1].x+b[1].y));
+  for(const [id, b] of blds) {
+    if(s.buildings[id]) drawDetailedBuilding(id, b.x, b.y);
+    
+    if(selectedObj === id) {
+      const p = iso(b.x+0.75, b.y+0.75);
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, 45*camera.scale, 22*camera.scale, 0, 0, Math.PI*2);
+      ctx.strokeStyle = "#f0a500"; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  requestAnimationFrame(drawGame);
+}
+
+/* ================= 4. КАМЕРА, СВАЙП И КЛИКИ ================= */
+const layer = $("camera-layer");
+let isDragging = false, startX, startY, camStartX, camStartY, isClick = true;
+
+layer.addEventListener("pointerdown", e => {
+  isDragging = true; isClick = true;
+  startX = e.clientX; startY = e.clientY;
+  camStartX = camera.x; camStartY = camera.y;
+  layer.setPointerCapture(e.pointerId);
+});
+
+layer.addEventListener("pointermove", e => {
+  if (!isDragging) return;
+  let dx = e.clientX - startX;
+  let dy = e.clientY - startY;
+  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) isClick = false; // Это свайп, а не клик
+  camera.x = camStartX + dx;
+  camera.y = camStartY + dy;
+});
+
+layer.addEventListener("pointerup", e => {
+  isDragging = false;
+  layer.releasePointerCapture(e.pointerId);
+  
+  if (isClick) {
+    // Проверка клика по объектам карты
+    for(let i=hits.length-1; i>=0; i--) {
+      const h = hits[i];
+      if (Math.hypot(e.clientX - h.x, e.clientY - h.y) < h.r) {
+        if (h.type === "collect") {
+          // Анимация полета ресурса
+          const el = document.createElement("div");
+          el.className = "fly-res"; el.innerText = h.id==="farm" ? "+15 🌾" : "+10 🪵";
+          el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px";
+          document.body.appendChild(el);
+          
+          const target = $(h.id==="farm"?"btn-food":"btn-wood").getBoundingClientRect();
+          setTimeout(() => { el.style.left = target.left+"px"; el.style.top = target.top+"px"; el.style.transform="scale(0.5)"; el.style.opacity="0"; }, 50);
+          setTimeout(() => { el.remove(); if(h.id==="farm") s.food+=15; else s.wood+=10; renderUI(); }, 800);
+          
+          readyToCollect[h.id] = false;
+        } else {
+          selectedObj = h.id;
+          tab = h.type === "land" ? "territory" : "base";
+          dockSize = "normal"; 
+          renderUI();
+        }
+        return;
+      }
+    }
+    // Если клик в пустоту
+    selectedObj = null; renderUI();
+  }
+});
+
+// Кнопки зума и интерфейса
+document.addEventListener("click", e => {
+  const btnZoom = e.target.closest("[data-camera]");
+  if(btnZoom) {
+    const act = btnZoom.dataset.camera;
+    if(act === "in") camera.scale = Math.min(2.5, camera.scale * 1.2);
+    if(act === "out") camera.scale = Math.max(0.5, camera.scale / 1.2);
+    if(act === "home") { camera.x = 0; camera.y = 0; camera.scale = 1.2; }
+    return;
+  }
+
+  const b = e.target.closest("button[data-action]"); if(!b) return;
+  const a = b.dataset.action, id = b.dataset.id;
+  
+  if (a === "tab") { tab = id; renderUI(); }
+  if (a === "collapse") { dockSize = dockSize==="map" ? "normal" : "map"; renderUI(); }
+  if (a === "build" && s.wood >= s.buildings[id]*50) { s.wood -= s.buildings[id]*50; s.buildings[id]++; renderUI(); }
+  if (a === "clear" && s.wood >= TERRITORY[id].cost) { s.wood -= TERRITORY[id].cost; s.territory.cleared.push(id); renderUI(); }
+});
+
+/* ================= 5. ЗАПУСК ================= */
+renderUI();
+requestAnimationFrame(drawGame);
+
+</script>
+</body>
+</html>
