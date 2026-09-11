@@ -178,9 +178,9 @@ nav button b { font-size: 18px; }
       </div>
       
       <div class="resources">
-        <div class="res-item res-food" id="btn-food">🍅 <span id="food">0</span></div>
-        <div class="res-item res-wood" id="btn-wood">🪵 <span id="wood">0</span></div>
-        <div class="res-item res-parts">⚙ <span id="parts">120</span></div>
+        <div class="res-item res-food" id="btn-food">🍅 <span id="food">0</span><small style="opacity:.55;font-size:9px;">/<span id="food-cap">500</span></small></div>
+        <div class="res-item res-wood" id="btn-wood">🪵 <span id="wood">0</span><small style="opacity:.55;font-size:9px;">/<span id="wood-cap">500</span></small></div>
+        <div class="res-item res-parts">⚙ <span id="parts">120</span><small style="opacity:.55;font-size:9px;">/<span id="parts-cap">500</span></small></div>
       </div>
     </header>
 
@@ -237,7 +237,8 @@ const BUILD = {
  mill: {name:"Лесопилка", x:2, y:0, w:1.5, d:1.5},
  barracks: {name:"Казармы", x:4, y:2, w:1.5, d:1.5},
  wall: {name:"Баррикада", x:4, y:0, w:1.2, d:1.2},
- watchtower: {name:"Вышка", x:0, y:0, w:1, d:1}
+ watchtower: {name:"Вышка", x:0, y:0, w:1, d:1},
+ warehouse: {name:"Склад", x:4, y:4, w:1.3, d:1.3}
 };
 
 const TERRITORY = {
@@ -331,13 +332,14 @@ const PVP_OPPONENTS = [
  {name:"Караван изгоев", icon:"🚚"}
 ];
 
-let s = { food: 55, wood: 10, parts: 120, wave: 1, buildings: { hq:1, farm:1, mill:1, barracks:1, wall:0, watchtower:0 },
+let s = { food: 55, wood: 10, parts: 120, wave: 1, buildings: { hq:1, farm:1, mill:1, barracks:1, wall:0, watchtower:0, warehouse:1 },
   territory: { cleared: [] }, heroes: { recruited: [] }, heroLevels: {}, army: { survivor: 0, guard: 0, marksman: 0, brute: 0 },
   tech: { bought: [] }, log: [], chapterIndex: 0, expeditions: {}, lastSeen: Date.now(),
   achievements: { claimed: [] }, daily: { streak: 0, lastClaim: null }, pvp: { rating: 1000 } };
 let readyToCollect = { farm: true, mill: true };
 let subTab = "survivors";
 let battleInProgress = false;
+let wildZombie = null; // { gx, gy, expiresAt } — временный "дикий" зомби, появляющийся рядом с базой
 
 function addLog(msg) {
   const time = new Date().toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"});
@@ -377,6 +379,7 @@ function loadGame() {
     if (!s.expeditions) s.expeditions = {};
     if (typeof s.buildings.wall !== "number") s.buildings.wall = 0;
     if (typeof s.buildings.watchtower !== "number") s.buildings.watchtower = 0;
+    if (typeof s.buildings.warehouse !== "number") s.buildings.warehouse = 1;
     if (!s.achievements) s.achievements = { claimed: [] };
     if (!s.daily) s.daily = { streak: 0, lastClaim: null };
     if (!s.pvp) s.pvp = { rating: 1000 };
@@ -392,7 +395,7 @@ function applyOfflineEarnings(lastSeen) {
   const foodGain = Math.floor((capped / 30) * (4 + farmLvl * 2) * 0.5);
   const woodGain = Math.floor((capped / 30) * (3 + millLvl * 2) * 0.5);
   if (foodGain > 0 || woodGain > 0) {
-    s.food += foodGain; s.wood += woodGain;
+    addRes("food", foodGain); addRes("wood", woodGain);
     const h = Math.floor(capped/3600), m = Math.floor((capped%3600)/60);
     addLog(`Офлайн-доход (${h}ч ${m}м): +${foodGain} 🍅, +${woodGain} 🪵`);
     setTimeout(() => showToast(`Пока вас не было (${h}ч ${m}м): +${foodGain} 🍅  +${woodGain} 🪵`), 600);
@@ -401,8 +404,19 @@ function applyOfflineEarnings(lastSeen) {
 function heroLevel(id) { return s.heroLevels[id] || 1; }
 function heroAtk(id) { const h = HERO_DATA[id]; if (!h) return 0; return h.atk + (heroLevel(id)-1) * Math.round(h.atk*0.2); }
 function heroLevelCost(id) { return 30 + heroLevel(id) * 25; }
-function wallLossReduction() { return Math.min(0.5, (s.buildings.wall||0) * 0.08); }
+function wallLossReduction() { return Math.min(0.5, (s.buildings.wall||0) * 0.08) + (hasHero("engineer") ? 0.15 : 0); }
 function watchtowerBonus() { return (s.buildings.watchtower||0) * 18; }
+function hasHero(id) { return s.heroes.recruited.includes(id); }
+function storageCap() { return 500 + (s.buildings.warehouse||0) * 350; }
+function addRes(key, amount) {
+  if (key !== "food" && key !== "wood" && key !== "parts") { s[key] = (s[key]||0) + amount; return amount; }
+  const cap = storageCap();
+  const before = s[key];
+  s[key] = Math.min(cap, before + amount);
+  return s[key] - before; // фактически добавленное количество (может быть меньше amount из-за лимита склада)
+}
+function territoryCostFor(t) { return hasHero("scout") ? Math.round(t.cost * 0.85) : t.cost; }
+function techCostFor(t) { return hasHero("chemist") ? Math.round(t.cost * 0.9) : t.cost; }
 
 function calcArmyPower() {
   let p = Object.entries(s.army).reduce((a,[id,cnt]) => a + cnt * (ARMY_DATA[id]?.atk||0), 0);
@@ -427,11 +441,21 @@ function isDailyClaimable() { return s.daily.lastClaim !== todayStr(); }
 
 /* ================= УПРАВЛЕНИЕ UI ================= */
 function renderBase(){
+  const descFor = id => {
+    if (id==="hq") return "Главное здание поселения.";
+    if (id==="farm") return "Производство томатов.";
+    if (id==="mill") return "Добыча древесины.";
+    if (id==="barracks") return "Обучение бойцов обороны.";
+    if (id==="wall") return `Снижает потери отряда в обороне (сейчас -${Math.round(wallLossReduction()*100)}%).`;
+    if (id==="watchtower") return `Усиливает мощь отряда в обороне (+${watchtowerBonus()} ⚔).`;
+    if (id==="warehouse") return `Увеличивает лимит склада (сейчас ${fmt(storageCap())} на ресурс).`;
+    return "";
+  };
   return `<div class="grid">${Object.entries(BUILD).map(([id,b])=>{
       const l=s.buildings[id];
       return `<article class="card ${selectedObj===id?"selected":""}">
         <div class="card-title"><span>${b.name}</span><span class="card-lvl">${l?`Ур. ${l}`:"Разрушено"}</span></div>
-        <p>${id==="hq"?"Главное здание поселения.":id==="farm"?"Производство томатов.":id==="mill"?"Добыча древесины.":id==="barracks"?"Обучение бойцов обороны.":id==="wall"?`Снижает потери отряда в обороне (сейчас -${Math.round(wallLossReduction()*100)}%).`:`Усиливает мощь отряда в обороне (+${watchtowerBonus()} ⚔).`}</p>
+        <p>${descFor(id)}</p>
         <button class="primary" data-action="build" data-id="${id}">${l?"Улучшить":"Отремонтировать"} (🪵 ${buildCost(id)})</button></article>`;
   }).join("")}</div>`;
 }
@@ -449,11 +473,12 @@ function renderMarket(){
 function renderTech(){
   return `<div class="grid">${Object.entries(TECH_DATA).map(([id,t])=>{
       const done = hasTech(id);
-      const can = s.parts >= t.cost;
+      const cost = techCostFor(t);
+      const can = s.parts >= cost;
       return `<article class="card ${done?"selected":""}">
         <div class="card-title"><span>${t.icon} ${t.name}</span><span class="card-lvl">${done?"Изучено":""}</span></div>
         <p>${t.desc}</p>
-        <button ${done?"disabled":(can?"":"disabled")} data-action="research" data-id="${id}">${done?"Изучено":"Изучить (⚙ "+t.cost+")"}</button></article>`;
+        <button ${done?"disabled":(can?"":"disabled")} data-action="research" data-id="${id}">${done?"Изучено":"Изучить (⚙ "+cost+")"}</button></article>`;
   }).join("")}</div>`;
 }
 
@@ -467,10 +492,11 @@ function renderJournal(){
 function renderTerritory(){
   return `<div class="grid">${Object.entries(TERRITORY).map(([id,p])=>{
       const done = s.territory.cleared.includes(id);
+      const cost = territoryCostFor(p);
       return `<article class="card ${done?"selected":""}">
         <div class="card-title"><span>${p.name}</span></div>
         <p>${done?"Сектор расчищен.":"Сектор заблокирован."}</p>
-        <button ${done?"disabled":""} data-action="clear" data-id="${id}">${done?"Безопасно":"Исследовать (🪵 "+p.cost+")"}</button></article>`;
+        <button ${done?"disabled":""} data-action="clear" data-id="${id}">${done?"Безопасно":"Исследовать (🪵 "+cost+")"}</button></article>`;
   }).join("")}</div>`;
 }
 
@@ -640,6 +666,8 @@ function renderUI(){
   
   $("food").innerText = fmt(s.food); $("wood").innerText = fmt(s.wood);
   $("parts").innerText = fmt(s.parts);
+  const cap = storageCap();
+  $("food-cap").innerText = fmt(cap); $("wood-cap").innerText = fmt(cap); $("parts-cap").innerText = fmt(cap);
   $("power").innerText = fmt(calcPower());
   $("hq-lvl").innerText = s.buildings.hq;
   $("rating").innerText = fmt(s.pvp.rating);
@@ -837,24 +865,44 @@ function drawBarracksBuilding(x, y) {
   poly([p2, apex1, apex2, p3], "#465238", "#222", 1.5);
 }
 
-// БАРРИКАДА (СТЕНА ИЗ ОБЛОМКОВ)
+// БАРРИКАДА (СТЕНА ИЗ ОБЛОМКОВ / РУИНЫ ДО ПОСТРОЙКИ)
 function drawWallBuilding(x, y) {
-  const segs = [[0,0.3],[0.4,0],[0.8,0.35]];
-  segs.forEach(([ox,oy]) => block3D(x+ox, y+oy, 0.35, 0.35, 16 + Math.random()*4, "#6b6157", "#4a423a"));
-  // Колючая проволока сверху
-  const w1 = iso(x, y+0.15), w2 = iso(x+1.1, y+0.4);
-  ctx.strokeStyle = "#8a8a8a"; ctx.lineWidth = 1.2*camera.scale;
-  ctx.beginPath(); ctx.moveTo(w1.x, w1.y-20*camera.scale); ctx.lineTo(w2.x, w2.y-18*camera.scale); ctx.stroke();
+  const built = (s.buildings.wall||0) > 0;
+  const segs = [[0,0.3,16],[0.4,0,20],[0.8,0.35,17]];
+  segs.forEach(([ox,oy,h]) => block3D(x+ox, y+oy, 0.35, 0.35, built ? h : h*0.35, built ? "#6b6157" : "#3a352f", built ? "#4a423a" : "#221f1b"));
+  if (built) {
+    // Колючая проволока сверху
+    const w1 = iso(x, y+0.15), w2 = iso(x+1.1, y+0.4);
+    ctx.strokeStyle = "#8a8a8a"; ctx.lineWidth = 1.2*camera.scale;
+    ctx.beginPath(); ctx.moveTo(w1.x, w1.y-20*camera.scale); ctx.lineTo(w2.x, w2.y-18*camera.scale); ctx.stroke();
+  }
 }
 
-// ВЫШКА НАБЛЮДЕНИЯ
+// ВЫШКА НАБЛЮДЕНИЯ (РУИНЫ ДО ПОСТРОЙКИ)
 function drawWatchtowerBuilding(x, y) {
+  const built = (s.buildings.watchtower||0) > 0;
+  if (!built) {
+    block3D(x+0.3, y+0.3, 0.4, 0.4, 10, "#3a352f", "#221f1b"); // Обломки фундамента
+    return;
+  }
   block3D(x+0.35, y+0.35, 0.3, 0.3, 55, "#6b5a44", "#4a3d2e"); // Опора
   block3D(x+0.15, y+0.15, 0.7, 0.7, 12, "#4a5540", "#37402f");  // Платформа-основание
   const top = iso(x+0.5, y+0.5); top.y -= 55*camera.scale;
-  block3D(x+0.15, y+0.15, 0.7, 0.7, 0, "#8a7458", "#6b5a44"); // (декоративная база площадки)
   ctx.fillStyle = "#5a4632"; ctx.strokeStyle = "#222"; ctx.lineWidth = 1.5*camera.scale;
   ctx.beginPath(); ctx.rect(top.x-16*camera.scale, top.y-8*camera.scale, 32*camera.scale, 10*camera.scale); ctx.fill(); ctx.stroke();
+}
+
+// СКЛАД
+function drawWarehouseBuilding(x, y) {
+  block3D(x+0.1, y+0.1, 1.1, 1.1, 10, "#6b6157", "#4a423a"); // Утоптанная площадка
+  block3D(x+0.2, y+0.2, 0.9, 0.9, 24, "#8a7458", "#665640"); // Корпус склада
+  // Ящики и бочки
+  const crateP = iso(x+0.35, y+0.85); crateP.y -= 30*camera.scale;
+  ctx.fillStyle = "#a3703f"; ctx.strokeStyle = "#5a4632"; ctx.lineWidth = 1.5*camera.scale;
+  ctx.beginPath(); ctx.rect(crateP.x-9*camera.scale, crateP.y-9*camera.scale, 18*camera.scale, 18*camera.scale); ctx.fill(); ctx.stroke();
+  const barrelP = iso(x+0.85, y+0.35); barrelP.y -= 32*camera.scale;
+  ctx.fillStyle = "#3b5a3f";
+  ctx.beginPath(); ctx.ellipse(barrelP.x, barrelP.y, 8*camera.scale, 11*camera.scale, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 }
 
 // АВТОБУС БАРРИКАДА
@@ -894,6 +942,7 @@ function drawGame() {
   drawBarracksBuilding(BUILD.barracks.x, BUILD.barracks.y);
   drawWallBuilding(BUILD.wall.x, BUILD.wall.y);
   drawWatchtowerBuilding(BUILD.watchtower.x, BUILD.watchtower.y);
+  drawWarehouseBuilding(BUILD.warehouse.x, BUILD.warehouse.y);
 
   // Хит-зоны построек для клика по карте
   const farmC = iso(BUILD.farm.x+0.75, BUILD.farm.y+0.75); farmC.y -= 20*camera.scale;
@@ -906,6 +955,8 @@ function drawGame() {
   hits.push({ type: "building", id: "wall", x: wallC.x, y: wallC.y, r: 36 * camera.scale });
   const towerC = iso(BUILD.watchtower.x+0.5, BUILD.watchtower.y+0.5); towerC.y -= 45*camera.scale;
   hits.push({ type: "building", id: "watchtower", x: towerC.x, y: towerC.y, r: 36 * camera.scale });
+  const whC = iso(BUILD.warehouse.x+0.65, BUILD.warehouse.y+0.65); whC.y -= 22*camera.scale;
+  hits.push({ type: "building", id: "warehouse", x: whC.x, y: whC.y, r: 40 * camera.scale });
 
   // Иконки сбора готовых ресурсов (С мультяшной обводкой)
   function drawCollectBubble(center, icon, amount, id) {
@@ -981,7 +1032,7 @@ function flyResource(startX, startY, icon, amount, resKey, targetBtnId) {
   document.body.appendChild(el);
   const target = $(targetBtnId).getBoundingClientRect();
   setTimeout(() => { el.style.left = target.left+"px"; el.style.top = target.top+"px"; el.style.transform="scale(0.5)"; el.style.opacity="0"; }, 50);
-  setTimeout(() => { el.remove(); s[resKey] += amount; renderUI(); saveGame(); }, 800);
+  setTimeout(() => { el.remove(); addRes(resKey, amount); renderUI(); saveGame(); }, 800);
 }
 
 // Ресурсы восстанавливаются автоматически раз в 30 секунд
@@ -989,6 +1040,31 @@ setInterval(() => {
   readyToCollect.farm = true;
   readyToCollect.mill = true;
 }, 30000);
+
+// Периодически рядом с базой появляется одиночный зомби — можно тапнуть, чтобы отогнать его за награду
+const WILD_ZOMBIE_SPOTS = [{x:-1,y:3},{x:5,y:1},{x:1,y:5},{x:-1,y:0},{x:5,y:4},{x:-1.5,y:4.5}];
+function maybeSpawnWildZombie() {
+  if (wildZombie || document.hidden) return;
+  const spot = WILD_ZOMBIE_SPOTS[Math.floor(Math.random()*WILD_ZOMBIE_SPOTS.length)];
+  wildZombie = { gx: spot.x, gy: spot.y, expiresAt: Date.now() + 25000 };
+  showToast("🧟 Одиночный зомби бродит у поселения — тапни по нему!");
+}
+setInterval(() => { if (Math.random() < 0.55) maybeSpawnWildZombie(); }, 50000);
+
+function fightWildZombie(clientX, clientY) {
+  if (!wildZombie) return;
+  wildZombie = null;
+  const myPower = calcArmyPower();
+  const threshold = 25 + s.wave * 8;
+  if (myPower >= threshold) {
+    const reward = 20 + Math.floor(Math.random()*25);
+    flyResource(clientX, clientY, "⚙", reward, "parts", "btn-food");
+    addLog(`Отогнан одиночный зомби у базы (+${reward} ⚙)`);
+  } else {
+    showToast("Отряд слишком слаб, чтобы справиться с зомби — он сбежал.");
+    addLog("Не удалось отогнать зомби — отряд слишком слаб.");
+  }
+}
 
 // Обновление таймеров экспедиций, пока открыта вкладка "Карта"
 setInterval(() => { if (tab === "map" && dockSize !== "map") renderUI(); }, 1000);
@@ -1015,6 +1091,7 @@ layer.addEventListener("pointerup", e => {
             addLog(`Собрана древесина с лесопилки (+${amount} 🪵)`);
           }
         }
+        else if (h.type === "wildzombie") { fightWildZombie(e.clientX, e.clientY); }
         else { selectedObj = h.id; tab = "base"; subTab = "survivors"; dockSize = "normal"; renderUI(); }
         return;
       }
@@ -1041,7 +1118,7 @@ document.addEventListener("click", e => {
   if (a === "claim_chapter") {
     const ch = currentChapter();
     if (ch.check(s)) {
-      Object.entries(ch.reward).forEach(([k,v]) => s[k] += v);
+      Object.entries(ch.reward).forEach(([k,v]) => addRes(k, v));
       addLog(`Глава завершена: «${ch.title}»`);
       if (!isLastChapter()) s.chapterIndex++;
       renderUI(); saveGame();
@@ -1062,7 +1139,7 @@ document.addEventListener("click", e => {
         showToast(`🎉 Новый герой: ${pickHero.icon} ${pickHero.name}!`);
       } else {
         const refund = Math.round(cost*0.5);
-        s.parts += refund;
+        addRes("parts", refund);
         addLog(`Дубликат (${RARITY_LABEL[rarity]}) — возвращено ${refund} ⚙`);
         showToast(`Дубликат героя — возвращено ${refund} ⚙`);
       }
@@ -1082,7 +1159,7 @@ document.addEventListener("click", e => {
   if (a === "expedition_claim") {
     const e = EXPEDITION_DATA[id]; const cur = s.expeditions[id];
     if (e && cur && cur.active && Date.now() >= cur.endTime) {
-      Object.entries(e.reward).forEach(([k,v]) => s[k] += v);
+      Object.entries(e.reward).forEach(([k,v]) => addRes(k, v));
       cur.active = false;
       addLog(`Экспедиция завершена: ${e.name}`);
       renderUI(); saveGame();
@@ -1094,10 +1171,11 @@ document.addEventListener("click", e => {
   }
   if (a === "clear") {
     const t = TERRITORY[id];
-    if (t && !s.territory.cleared.includes(id) && s.wood >= t.cost) {
-      s.wood -= t.cost; s.territory.cleared.push(id);
-      const bonus = 20 + t.cost;
-      s.parts += bonus;
+    const cost = t ? territoryCostFor(t) : 0;
+    if (t && !s.territory.cleared.includes(id) && s.wood >= cost) {
+      s.wood -= cost; s.territory.cleared.push(id);
+      const bonus = 20 + cost;
+      addRes("parts", bonus);
       addLog(`Расчищен сектор: ${t.name} (+${bonus} ⚙)`); renderUI(); saveGame();
     }
   }
@@ -1126,17 +1204,25 @@ document.addEventListener("click", e => {
         const win = Math.random() < winChance;
         if (win) {
           const foodR = 80 + s.wave*15, woodR = 40 + s.wave*8;
-          s.wave += 1; s.food += foodR; s.wood += woodR;
+          s.wave += 1; addRes("food", foodR); addRes("wood", woodR);
           addLog(`Отражена волна ${s.wave-1}! Награда: +${foodR} 🍅, +${woodR} 🪵`);
           showToast(`⚔ Волна отражена! +${foodR} 🍅 +${woodR} 🪵`);
         } else {
           const lossMult = (1 - wallLossReduction()) * (hasTech("medkits") ? 0.5 : 1);
+          let totalLost = 0;
           Object.keys(s.army).forEach(id => {
             const lose = Math.floor(s.army[id] * 0.2 * lossMult);
             s.army[id] = Math.max(0, s.army[id] - lose);
+            totalLost += lose;
           });
-          addLog(`Оборона провалена на волне ${s.wave}! Отряд понёс потери.`);
-          showToast(`💀 Оборона провалена! Отряд понёс потери.`);
+          let healed = 0;
+          if (hasHero("medic") && totalLost > 0) {
+            healed = Math.floor(totalLost * 0.4);
+            const ids = Object.keys(s.army);
+            for (let i=0; i<healed; i++) s.army[ids[i % ids.length]]++;
+          }
+          addLog(`Оборона провалена на волне ${s.wave}! Отряд понёс потери.${healed?` Медик вылечил ${healed} бойцов.`:""}`);
+          showToast(`💀 Оборона провалена!${healed?` Медик спас ${healed} бойцов.`:""}`);
         }
         battleInProgress = false;
         renderUI(); saveGame();
@@ -1156,7 +1242,7 @@ document.addEventListener("click", e => {
           const gain = 15 + Math.floor(Math.random()*10);
           s.pvp.rating += gain;
           const reward = 40 + Math.floor(s.pvp.rating/50);
-          s.parts += reward;
+          addRes("parts", reward);
           addLog(`PvP победа над «${opp.name}»! Рейтинг +${gain}, +${reward} ⚙`);
           showToast(`🏆 Победа над «${opp.name}»! +${gain} рейтинга`);
         } else {
@@ -1187,7 +1273,7 @@ document.addEventListener("click", e => {
       if (s.daily.streak > 7) s.daily.streak = 1;
       s.daily.lastClaim = today;
       const reward = DAILY_REWARDS[(s.daily.streak-1) % 7];
-      Object.entries(reward).forEach(([k,v]) => { if (v) s[k] += v; });
+      Object.entries(reward).forEach(([k,v]) => { if (v) addRes(k, v); });
       addLog(`Ежедневная награда (день ${s.daily.streak}) получена`);
       showToast(`🎁 Ежедневная награда за день ${s.daily.streak}!`);
       renderUI(); saveGame();
@@ -1197,7 +1283,7 @@ document.addEventListener("click", e => {
     const ach = ACHIEVEMENT_DATA.find(x => x.id === id);
     if (ach && !s.achievements.claimed.includes(id) && ach.check(s)) {
       s.achievements.claimed.push(id);
-      Object.entries(ach.reward).forEach(([k,v]) => s[k] += v);
+      Object.entries(ach.reward).forEach(([k,v]) => addRes(k, v));
       addLog(`Достижение получено: ${ach.title}`);
       showToast(`🏆 Достижение: ${ach.title}!`);
       renderUI(); saveGame();
@@ -1206,14 +1292,15 @@ document.addEventListener("click", e => {
   if (a === "trade") {
     const d = MARKET_DEALS[id];
     if (d && s[d.give] >= d.giveAmt) {
-      s[d.give] -= d.giveAmt; s[d.get] += d.getAmt;
+      s[d.give] -= d.giveAmt; addRes(d.get, d.getAmt);
       addLog(`Сделка на рынке: ${d.label}`); renderUI(); saveGame();
     }
   }
   if (a === "research") {
     const t = TECH_DATA[id];
-    if (t && !hasTech(id) && s.parts >= t.cost) {
-      s.parts -= t.cost; s.tech.bought.push(id); addLog(`Изучена технология: ${t.name}`); renderUI(); saveGame();
+    const cost = t ? techCostFor(t) : 0;
+    if (t && !hasTech(id) && s.parts >= cost) {
+      s.parts -= cost; s.tech.bought.push(id); addLog(`Изучена технология: ${t.name}`); renderUI(); saveGame();
     }
   }
 });
