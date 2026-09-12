@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#121517">
+<title>The Last Port — Ultimate+</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<style>
+:root{color-scheme:dark;--text:#f3f4f6;--muted:#9ca3af;--gold:#f59e0b;--bg:#0c0e10;--card:#161a1e;--brd:#2d353e;--h:100dvh}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--text)}
+button{font:inherit;cursor:pointer;border:none;outline:none;transition:transform .1s,background .2s}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.4;filter:grayscale(1);pointer-events:none}
+[hidden]{display:none!important}
+main{position:relative;width:100%;height:var(--h);overflow:hidden}
+.scene{position:absolute;inset:0;z-index:1;background:#0a0f12}
+canvas{display:block;touch-action:none}
+#camera-layer{position:absolute;inset:0;z-index:2;touch-action:none}
+.ui{position:absolute;inset:0;z-index:10;pointer-events:none;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,8px)}
+header{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 10px;pointer-events:auto;gap:6px}
+.pbadge{display:flex;align-items:center;gap:6px;background:rgba(15,18,22,.93);border:1px solid #b48530;border-radius:10px;padding:3px 10px 3px 3px;backdrop-filter:blur(8px);box-shadow:0 4px 16px rgba(0,0,0,.8)}
+.pav{width:40px;height:40px;border-radius:8px;border:2px solid var(--gold);background:#1c2128;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.pinfo{display:flex;flex-direction:column}
+.plvl{font-size:8px;color:#fbbf24;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+.ppw{font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000}
+.prat{font-size:9px;color:#93c5fd;font-weight:700}
+.xp-bar{height:3px;border-radius:2px;background:#1c2128;margin-top:2px;overflow:hidden;width:80px}
+.xp-fill{height:100%;background:linear-gradient(90deg,#a855f7,#c084fc);transition:width .4s}
+.res{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.ri{background:rgba(15,18,22,.93);border:1px solid var(--brd);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:bold;display:flex;align-items:center;gap:4px;box-shadow:0 3px 10px rgba(0,0,0,.5);backdrop-filter:blur(6px)}
+.rf{color:#f87171;border-color:rgba(248,113,113,.3)}
+.rw{color:#fcd34d;border-color:rgba(253,224,71,.3)}
+.rp{color:#93c5fd;border-color:rgba(147,197,253,.3)}
+#chstrip{align-self:flex-start;margin:3px 10px;background:linear-gradient(90deg,rgba(20,24,30,.96),rgba(12,15,18,.85));border-left:3px solid var(--gold);border-radius:6px;padding:6px 12px;display:flex;align-items:center;gap:7px;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.7);backdrop-filter:blur(6px);cursor:pointer}
+.chav{width:26px;height:26px;border-radius:5px;background:#262c33;display:grid;place-items:center;font-size:13px}
+.chc small{display:block;font-size:8px;color:var(--muted);text-transform:uppercase}
+.chc strong{font-size:11px;color:#f3f4f6}
+.cctrl{position:absolute;right:10px;top:36%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;pointer-events:auto}
+.cctrl button{width:38px;height:38px;border-radius:9px;background:rgba(22,26,32,.92);border:1px solid var(--brd);color:#fff;font-size:16px;box-shadow:0 3px 12px rgba(0,0,0,.7);backdrop-filter:blur(6px)}
+.cctrl .pr{border-color:var(--gold);color:var(--gold)}
+#dock{margin-top:auto;background:rgba(14,17,21,.97);backdrop-filter:blur(14px);border-top-left-radius:16px;border-top-right-radius:16px;pointer-events:auto;display:flex;flex-direction:column;box-shadow:0 -8px 36px rgba(0,0,0,.9);height:44dvh;transition:height .35s cubic-bezier(.4,0,.2,1);z-index:100;border-top:1px solid var(--brd)}
+#dock.col{height:48px}
+.tb{display:flex;gap:5px;padding:8px 10px 5px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.tb::-webkit-scrollbar{display:none}
+.tb button{background:var(--card);border:1px solid var(--brd);color:var(--muted);padding:7px 10px;border-radius:7px;font-size:10px;font-weight:bold;white-space:nowrap}
+.tb button.act{background:#28313b;color:#fff;border-color:var(--gold)}
+.sz{width:32px;padding:0!important;display:grid;place-items:center;font-size:14px}
+#panel{flex:1;overflow-y:auto;padding:5px 10px 10px;scrollbar-width:none}
+#panel::-webkit-scrollbar{display:none}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.cd{background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:9px;display:flex;flex-direction:column;gap:5px;transition:border-color .2s,box-shadow .2s}
+.cd.sel{border-color:var(--gold);box-shadow:0 0 14px rgba(245,158,11,.12)}
+.ct{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:bold;color:#fff}
+.cl{font-size:9px;color:var(--gold);background:rgba(245,158,11,.15);padding:2px 5px;border-radius:3px}
+.cd p{font-size:9px;color:var(--muted);line-height:1.3;margin:0;flex:1}
+.cd>button,.cbtn{background:linear-gradient(180deg,#d97706,#b45309);color:#fff;padding:7px;border-radius:7px;font-weight:bold;font-size:10px;text-shadow:0 1px 2px rgba(0,0,0,.5);text-align:center}
+.ci{font-size:22px;text-align:center}
+.cb{height:4px;border-radius:3px;background:#1c2128;overflow:hidden}
+.cbf{height:100%;border-radius:3px;transition:width .4s}
+nav{display:flex;justify-content:space-around;background:#090b0d;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0));border-top:1px solid var(--brd);flex-shrink:0;overflow-x:auto}
+nav button{background:none;color:#6b7280;font-size:8px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 4px;min-width:0}
+nav button.act{color:var(--gold)}
+nav button b{font-size:16px}
+#toast{position:absolute;top:6px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:9998;background:rgba(12,15,18,.97);border:1px solid var(--gold);border-radius:9px;padding:8px 16px;font-size:11px;font-weight:700;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.8);opacity:0;transition:.4s;pointer-events:none;text-align:center;max-width:90%}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.fly{position:absolute;z-index:9999;font-weight:900;font-size:14px;text-shadow:0 2px 6px #000;pointer-events:none;transition:.9s cubic-bezier(.2,1,.3,1)}
+.rar{font-size:8px;font-weight:800;padding:2px 5px;border-radius:3px;text-transform:uppercase}
+.rc{background:rgba(156,163,175,.2);color:#d1d5db}
+.rr{background:rgba(96,165,250,.2);color:#60a5fa}
+.re{background:rgba(192,132,252,.2);color:#c084fc}
+.rl{background:rgba(245,158,11,.25);color:#fbbf24}
+.hav{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid #4b5563;background:#1c2128;flex-shrink:0}
+.hav.rr{border-color:#60a5fa;box-shadow:0 0 8px rgba(96,165,250,.4)}
+.hav.re{border-color:#c084fc;box-shadow:0 0 8px rgba(192,132,252,.4)}
+.hav.rl{border-color:#fbbf24;box-shadow:0 0 10px rgba(251,191,36,.5)}
+.hr{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--brd);border-radius:9px;padding:8px;margin-bottom:6px}
+.hr.sel{border-color:var(--gold)}
+.hri{flex:1;min-width:0}
+.hri b{display:block;font-size:11px;color:#fff}
+.hri small{font-size:9px;color:var(--muted)}
+.eqslot{display:inline-block;width:28px;height:28px;border:1px dashed var(--brd);border-radius:5px;background:#1c2128;text-align:center;line-height:28px;font-size:12px;margin:2px}
+.eqslot.filled{border-color:var(--gold);border-style:solid;background:#241c10}
+.wmap{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0}
+.wtile{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:18px;cursor:pointer;border:1px solid var(--brd);transition:transform .15s}
+.wtile:active{transform:scale(.93)}
+.wtile.forest{background:#1a2e1a}
+.wtile.ruins{background:#2a2220}
+.wtile.military{background:#1a2030}
+.wtile.hospital{background:#1a2a2a}
+.wtile.town{background:#2a2a1a}
+.wtile small{font-size:7px;color:var(--muted);margin-top:2px}
+.wtile.explored{opacity:.5}
+.wtile.current{border-color:var(--gold);box-shadow:0 0 8px rgba(245,158,11,.3)}
+.tech-node{background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px;margin-bottom:8px;display:flex;gap:10px;align-items:center}
+.tech-node.done{border-color:#16a34a;background:#0f1f15}
+.tech-node.active{border-color:#2563eb}
+.tech-icon{width:40px;height:40px;border-radius:8px;background:#1c2128;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.tech-info{flex:1}
+.tech-info b{display:block;font-size:11px;color:#fff}
+.tech-info p{font-size:9px;color:var(--muted);margin:2px 0}
+.tech-bar{height:4px;border-radius:3px;background:#1c2128;overflow:hidden;margin-top:4px}
+.tech-bar-fill{height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);transition:width .5s}
+.inv-item{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:8px;margin-bottom:6px}
+.inv-icon{width:36px;height:36px;border-radius:6px;background:#1c2128;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:1px solid var(--brd)}
+.inv-info{flex:1}
+.inv-info b{display:block;font-size:11px;color:#fff}
+.inv-info small{font-size:9px;color:var(--muted)}
+.alliance-box{background:linear-gradient(160deg,#141a24,#0e1218);border:1px solid #2563eb;border-radius:12px;padding:14px;text-align:center;margin-bottom:10px}
+.alliance-box h4{margin:0 0 4px;font-size:14px;color:#60a5fa}
+.alliance-box p{margin:0 0 10px;font-size:10px;color:var(--muted)}
+.alliance-box button{background:linear-gradient(180deg,#2563eb,#1d4ed8);color:#fff;font-weight:900;padding:10px 20px;border-radius:8px;font-size:12px}
+.member-row{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:8px;margin-bottom:6px}
+.member-av{width:32px;height:32px;border-radius:50%;background:#1c2128;display:flex;align-items:center;justify-content:center;font-size:16px}
+.recipe-card{background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:10px;margin-bottom:8px}
+.recipe-top{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.recipe-icon{width:36px;height:36px;border-radius:6px;background:#1c2128;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid var(--brd)}
+.recipe-cost{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.recipe-cost span{font-size:9px;padding:2px 5px;border-radius:3px;background:#1c2128}
+.recipe-cost .ok{color:#4ade80}
+.recipe-cost .no{color:#ef4444}
+.quest-card{background:var(--card);border:1px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:8px}
+.quest-card .qn{font-size:9px;color:var(--gold);text-transform:uppercase;font-weight:800}
+.quest-card h3{margin:4px 0;font-size:13px;color:#fff}
+.quest-card p{font-size:10px;color:var(--muted);margin:0 0 8px}
+.qr{font-size:10px;color:#fbbf24;margin-bottom:8px}
+.exp-card{background:var(--card);border:1px solid var(--brd);border-radius:9px;padding:9px;margin-bottom:6px}
+.exp-top{display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#fff;margin-bottom:3px}
+.exp-card p{font-size:9px;color:var(--muted);margin:0 0 6px}
+.eb{height:5px;border-radius:3px;background:#262c33;overflow:hidden;margin-bottom:6px}
+.ebf{height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);transition:width .5s}
+.exp-card button{width:100%;background:linear-gradient(180deg,#2563eb,#1d4ed8);color:#fff;font-weight:bold;padding:7px;border-radius:6px;font-size:10px}
+.exp-card button.rdy{background:linear-gradient(180deg,#16a34a,#15803d)}
+.gacha{background:linear-gradient(160deg,#241c10,#171310);border:1px solid var(--gold);border-radius:12px;padding:14px;text-align:center;margin-bottom:12px}
+.gacha h4{margin:0 0 4px;font-size:14px;color:#fbbf24}
+.gacha p{margin:0 0 10px;font-size:10px;color:var(--muted)}
+.gacha button{background:linear-gradient(180deg,#f59e0b,#b45309);color:#1a1206;font-weight:900;padding:9px 20px;border-radius:7px;font-size:11px}
+.rwstrip{display:flex;gap:5px;overflow-x:auto;padding-bottom:5px;margin-bottom:10px;scrollbar-width:none}
+.rwstrip::-webkit-scrollbar{display:none}
+.rwd{flex:0 0 auto;width:52px;background:var(--card);border:1px solid var(--brd);border-radius:7px;padding:6px 3px;text-align:center}
+.rwd.today{border-color:var(--gold);background:#241c10}
+.rwd.done{opacity:.35}
+.rwd small{display:block;font-size:8px;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+.rwd span{font-size:14px}
+.rwd b{display:block;font-size:9px;color:#fff;margin-top:1px}
+.pvp-box{background:linear-gradient(160deg,#1a1420,#120e18);border:1px solid #7c3aed;border-radius:12px;padding:14px;text-align:center;margin-top:12px}
+.pvp-box h4{margin:0 0 4px;font-size:14px;color:#c084fc}
+.pvp-box p{margin:0 0 10px;font-size:10px;color:var(--muted)}
+.pvp-box button{background:linear-gradient(180deg,#a855f7,#7c3aed);color:#fff;font-weight:900;padding:9px 20px;border-radius:7px;font-size:11px}
+.wfx{position:absolute;inset:0;z-index:3;pointer-events:none}
+#arena-overlay{position:fixed;inset:0;z-index:5000;background:#050607}
+#arena-overlay[hidden]{display:none!important}
+#arena-canvas{position:absolute;inset:0;width:100%;height:100%}
+.ahud{position:absolute;top:0;left:0;right:0;padding:max(12px,env(safe-area-inset-top)) 14px 0;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.awave{font-size:13px;font-weight:900;color:#fbbf24;text-shadow:0 2px 6px #000;text-transform:uppercase}
+.ahpw{width:min(300px,78%);height:14px;background:rgba(0,0,0,.7);border:2px solid #1a1d22;border-radius:7px;overflow:hidden}
+.ahpf{height:100%;width:100%;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .25s}
+.ahpf.low{background:linear-gradient(90deg,#dc2626,#ef4444)}
+.asplash{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%) scale(.7);font-size:22px;font-weight:900;text-align:center;text-shadow:0 4px 18px #000;opacity:0;transition:.4s cubic-bezier(.2,1,.3,1);pointer-events:none;white-space:pre-line}
+.asplash.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.asplash.win{color:#4ade80}
+.asplash.lose{color:#ef4444}
+.ajoy{position:absolute;left:max(18px,env(safe-area-inset-left));bottom:max(24px,env(safe-area-inset-bottom));width:100px;height:100px;border-radius:50%;background:rgba(20,24,28,.55);border:2px solid rgba(245,158,11,.35);touch-action:none;pointer-events:auto}
+.ajoy .stk{position:absolute;left:50%;top:50%;width:42px;height:42px;margin:-21px;border-radius:50%;background:rgba(245,158,11,.85);border:2px solid #fff8;box-shadow:0 4px 10px rgba(0,0,0,.6);pointer-events:none}
+.aflash{position:absolute;inset:0;background:#dc2626;opacity:0;pointer-events:none;z-index:1;transition:opacity .12s}
+.abtn{position:absolute;border-radius:50%;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.abtn-atk{right:max(18px,env(safe-area-inset-right));bottom:max(36px,env(safe-area-inset-bottom));width:64px;height:64px;background:linear-gradient(180deg,#dc2626,#991b1b);border:3px solid #fca5a5;font-size:22px}
+.abtn-skl{right:max(92px,calc(env(safe-area-inset-right) + 74px));bottom:max(58px,calc(env(safe-area-inset-bottom) + 22px));width:48px;height:48px;background:linear-gradient(180deg,#2563eb,#1d4ed8);border:2px solid #93c5fd;font-size:16px}
+.akills{position:absolute;top:max(55px,calc(env(safe-area-inset-top) + 45px));right:14px;font-size:12px;font-weight:800;color:#fbbf24;text-shadow:0 2px 6px #000;pointer-events:none}
+.atimer{position:absolute;top:max(55px,calc(env(safe-area-inset-top) + 45px));left:14px;font-size:12px;font-weight:800;color:#fff;text-shadow:0 2px 6px #000;pointer-events:none}
+.axp-popup{position:absolute;z-index:9999;font-weight:900;font-size:12px;color:#c084fc;text-shadow:0 2px 6px #000;pointer-events:none;transition:.8s cubic-bezier(.2,1,.3,1)}
+</style>
+
+<!-- Render stability patch: local/remote Three.js fallback + visible fallback scene -->
+<style id="render-stability-patch">
+  #renderBootOverlay{
+    position:fixed; inset:0; z-index:999999; display:none;
+    align-items:center; justify-content:center; flex-direction:column;
+    background:#070b0d; color:#fff; font-family:Arial,sans-serif;
+    text-align:center; padding:28px; box-sizing:border-box;
+  }
+  #renderBootOverlay .rb-card{max-width:520px;padding:28px;border:1px solid #27343a;border-radius:22px;background:#0d1317;box-shadow:0 20px 60px #0008}
+  #renderBootOverlay h2{margin:0 0 10px;font-size:24px}
+  #renderBootOverlay p{margin:8px 0;color:#aebbc2;line-height:1.45}
+  #renderBootOverlay button{margin-top:16px;padding:12px 18px;border-radius:12px;border:1px solid #f2a51a;background:#171d21;color:#fff;font-weight:700}
+</style>
+<div id="renderBootOverlay">
+  <div class="rb-card">
+    <h2>Карта загружается…</h2>
+    <p>Если внешний графический модуль недоступен, игра автоматически использует резервный режим.</p>
+    <button onclick="location.reload()">Перезагрузить</button>
+  </div>
+</div>
+<script>
+(function(){
+  var overlay=document.getElementById('renderBootOverlay');
+  window.__renderGameBooted=false;
+  window.__renderMarkBooted=function(){ window.__renderGameBooted=true; if(overlay) overlay.style.display='none'; };
+  window.addEventListener('error',function(e){
+    if(e && e.target && e.target.tagName==='SCRIPT' && /three/i.test(e.target.src||'')){
+      if(overlay) overlay.style.display='flex';
+    }
+  },true);
+})();
+</script>
+
+</head>
+<body>
+<main>
+<div class="scene"><canvas id="world"></canvas><div id="camera-layer"></div></div>
+<canvas class="wfx" id="wcanvas"></canvas>
+<div class="ui">
+  <header>
+    <div class="pbadge">
+      <div class="pav" id="pav-icon">🧑</div>
+      <div class="pinfo">
+        <span class="plvl">Ур.<span id="plvl">1</span> | Ратуша <span id="hlvl">1</span></span>
+        <span class="ppw">⚔<span id="ppw">0</span></span>
+        <span class="prat">🏆<span id="prat">1000</span></span>
+        <div class="xp-bar"><div class="xp-fill" id="xpfill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="res">
+      <div class="ri rf">🍅<span id="rfood">0</span><small style="opacity:.5;font-size:8px">/<span id="rfcap">500</span></small></div>
+      <div class="ri rw">🪵<span id="rwood">0</span><small style="opacity:.5;font-size:8px">/<span id="rwcap">500</span></small></div>
+      <div class="ri rp">⚙<span id="rparts">120</span><small style="opacity:.5;font-size:8px">/<span id="rpcap">500</span></small></div>
+    </div>
+  </header>
+  <button id="chstrip"><div class="chav">📋</div><div class="chc"><small id="chn">Глава 1</small><strong id="cht">Отремонтируйте ратушу</strong></div></button>
+  <div class="cctrl">
+    <button data-cam="in">＋</button><button data-cam="out">−</button><button class="pr" data-cam="home">⌂</button>
+  </div>
+  <section id="dock">
+    <div class="tb" id="subtabs"></div>
+    <div id="panel"></div>
+    <nav id="mnav"></nav>
+  </section>
+</div>
+<div id="toast"></div>
+<div id="arena-overlay" hidden>
+  <canvas id="arena-canvas"></canvas>
+  <div class="aflash" id="aflash"></div>
+  <div class="ahud"><div class="awave" id="awlbl">Волна 1</div><div class="ahpw"><div class="ahpf" id="ahpf"></div></div></div>
+  <div class="asplash" id="asplash"></div>
+  <div class="ajoy" id="ajoy"><div class="stk" id="astk"></div></div>
+  <button class="abtn abtn-atk" id="aatk">⚔</button>
+  <button class="abtn abtn-skl" id="askl">💥</button>
+  <div class="akills" id="akills">💀 0</div>
+  <div class="atimer" id="atimer">⏱ 0:00</div>
+</div>
+</main>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),fmt=n=>new Intl.NumberFormat("ru-RU").format(Math.floor(n||0));
+
+/* ===== STATE ===== */
+const S={
+  food:80,wood:60,parts:120,fcap:500,wcap:500,pcap:500,
+  xp:0,xpNext:100,plvl:1,
+  buildings:{
+    hq:{n:"Ратуша",l:1,i:"🏛",x:0,z:0,w:2.2,d:2.2,hp:100,mhp:100,prod:null,cost:{wood:50,parts:30},pw:500},
+    farm:{n:"Ферма",l:1,i:"🌾",x:-3.5,z:0,w:1.6,d:1.6,hp:80,mhp:80,prod:{r:"food",v:2},cost:{wood:30},pw:100},
+    mill:{n:"Лесопилка",l:1,i:"🪓",x:0,z:-3.5,w:1.6,d:1.6,hp:80,mhp:80,prod:{r:"wood",v:2},cost:{wood:20,parts:10},pw:100},
+    barracks:{n:"Казармы",l:1,i:"⚔",x:3.5,z:0,w:1.6,d:1.6,hp:90,mhp:90,prod:null,cost:{wood:40,parts:20},pw:200},
+    wall:{n:"Баррикада",l:1,i:"🧱",x:3.5,z:-3.5,w:1.2,d:1.2,hp:120,mhp:120,prod:null,cost:{wood:25},pw:150},
+    tower:{n:"Вышка",l:1,i:"🗼",x:-3.5,z:-3.5,w:1,d:1,hp:60,mhp:60,prod:null,cost:{parts:20},pw:180},
+    workshop:{n:"Мастерская",l:0,i:"🔧",x:0,z:3.5,w:1.4,d:1.4,hp:70,mhp:70,prod:{r:"parts",v:1},cost:{wood:60,food:40},pw:120},
+    hospital:{n:"Лазарет",l:0,i:"🏥",x:-3.5,z:3.5,w:1.4,d:1.4,hp:70,mhp:70,prod:null,cost:{wood:50,parts:25},pw:90},
+  },
+  heroes:[
+    {n:"Рик",i:"🤠",r:"legendary",l:1,atk:18,def:12,hp:100,sk:"Залп",eq:true,wpn:null,arm:null},
+    {n:"Мишонн",i:"⚔️",r:"epic",l:1,atk:22,def:8,hp:85,sk:"Клинок",eq:true,wpn:null,arm:null},
+    {n:"Дэрил",i:"🏹",r:"epic",l:1,atk:20,def:10,hp:90,sk:"Арбалет",eq:false,wpn:null,arm:null},
+    {n:"Гленн",i:"🧢",r:"rare",l:1,atk:12,def:14,hp:95,sk:"Разведка",eq:false,wpn:null,arm:null},
+    {n:"Мэгги",i:"👩",r:"rare",l:1,atk:14,def:12,hp:90,sk:"Лидерство",eq:false,wpn:null,arm:null},
+  ],
+  inv:[],
+  recipes:[
+    {id:"w1",n:"Ржавый меч",i:"🗡",type:"wpn",stat:"atk",val:5,cost:{wood:20,parts:10},rar:"common"},
+    {id:"w2",n:"Стальной клинок",i:"⚔",type:"wpn",stat:"atk",val:12,cost:{wood:50,parts:30},rar:"rare"},
+    {id:"w3",n:"Катана Мишонн",i:"🔪",type:"wpn",stat:"atk",val:22,cost:{wood:80,parts:60,food:30},rar:"epic"},
+    {id:"w4",n:"Арбалет Дэрила",i:"🏹",type:"wpn",stat:"atk",val:18,cost:{wood:60,parts:40},rar:"epic"},
+    {id:"a1",n:"Кожаная куртка",i:"🧥",type:"arm",stat:"def",val:8,cost:{food:30,parts:20},rar:"common"},
+    {id:"a2",n:"Бронежилет",i:"🦺",type:"arm",stat:"def",val:16,cost:{parts:50,wood:30},rar:"rare"},
+    {id:"a3",n:"Щит из дверей",i:"🚪",type:"arm",stat:"def",val:25,cost:{parts:70,wood:50},rar:"epic"},
+    {id:"c1",n:"Аптечка",i:"💊",type:"cons",stat:"hp",val:40,cost:{food:40},rar:"common"},
+    {id:"c2",n:"Бомба",i:"💣",type:"cons",stat:"dmg",val:60,cost:{parts:35,wood:15},rar:"rare"},
+  ],
+  techs:[
+    {id:"t1",n:"Укреплённые стены",i:"🧱",desc:"+20% HP зданий",dur:30,done:false,started:0,fx:{bhp:0.2}},
+    {id:"t2",n:"Земледелие",i:"🌾",desc:"+50% производство еды",dur:25,done:false,started:0,fx:{fprod:0.5}},
+    {id:"t3",n:"Оружейное дело",i:"🔫",desc:"+15% атака героев",dur:45,done:false,started:0,fx:{hatk:0.15}},
+    {id:"t4",n:"Медицина",i:"💊",desc:"+30% HP героев",dur:40,done:false,started:0,fx:{hhp:0.3}},
+    {id:"t5",n:"Логистика",i:"📦",desc:"+50% ёмкость складов",dur:35,done:false,started:0,fx:{cap:0.5}},
+    {id:"t6",n:"Разведка",i:"🔭",desc:"Карта +2 клетки",dur:50,done:false,started:0,fx:{map:2}},
+  ],
+  quests:[
+    {id:"q1",t:"Отремонтируйте ратушу",d:"Улучшите ратушу до ур.2",tgt:"hq",tl:2,rw:{food:100,wood:100,parts:50,xp:50},done:false},
+    {id:"q2",t:"Постройте мастерскую",d:"Разблокируйте мастерскую",tgt:"workshop",tl:1,rw:{parts:80,xp:40},done:false},
+    {id:"q3",t:"Защитите базу",d:"Переживите 3 волны",tgt:"aw",tv:3,rw:{food:200,wood:200,parts:100,xp:80},done:false},
+    {id:"q4",t:"Скрафтите оружие",d:"Создайте любой предмет",tgt:"craft",tv:1,rw:{parts:60,xp:60},done:false},
+  ],
+  qi:0,
+  exps:[],
+  dday:0,dclaim:false,
+  awaves:0,akills:0,
+  rating:1000,
+  craftCount:0,
+  alliance:{name:"",members:[],bonus:0,joined:false},
+  wmap:[],
+  tab:"base",sub:"buildings",
+  cd:12,ca:Math.PI/4,cr:-Math.PI/4,
+};
+
+function xp(v){S.xp+=v;while(S.xp>=S.xpNext){S.xp-=S.xpNext;S.plvl++;S.xpNext=Math.floor(S.xpNext*1.5);toast(`🎉 Уровень ${S.plvl}!`);fly(`+LVL!`,"#c084fc")}updHUD();save()}
+function pw(){let p=0;for(const b of Object.values(S.buildings))if(b.l>0)p+=b.pw*b.l;for(const h of S.heroes)p+=(h.atk+h.def)*h.l*10;return p}
+function techFx(k){let v=0;for(const t of S.techs)if(t.done&&t.fx[k])v+=t.fx[k];return v}
+function save(){try{localStorage.setItem("tlp2",JSON.stringify(S))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("tlp2"));if(d){Object.assign(S,d);for(const k in S.buildings)if(d.buildings[k])Object.assign(S.buildings[k],d.buildings[k])}}catch(e){}}
+load();
+
+/* ===== TOAST/FLY ===== */
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2200)}
+function fly(t,c,x,y){const e=document.createElement("div");e.className="fly";e.textContent=t;e.style.color=c;e.style.left=(x||innerWidth/2)+"px";e.style.top=(y||innerHeight/3)+"px";document.body.appendChild(e);requestAnimationFrame(()=>{e.style.top=(parseInt(e.style.top)-55)+"px";e.style.opacity="0"});setTimeout(()=>e.remove(),1e3)}
+
+/* ===== THREE.JS ===== */
+let R,SC,CAM,CLK,BM={};
+function initScene(){
+  const c=$("world"),W=innerWidth,H=innerHeight;
+  R=new THREE.WebGLRenderer({canvas:c,antialias:true});
+  R.setSize(W,H);R.setPixelRatio(Math.min(devicePixelRatio,2));
+  R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
+  R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=.85;
+  SC=new THREE.Scene();SC.background=new THREE.Color(0x0a1520);SC.fog=new THREE.FogExp2(0x0a1520,.016);
+  CAM=new THREE.PerspectiveCamera(50,W/H,.1,200);CLK=new THREE.Clock();
+  SC.add(new THREE.AmbientLight(0x334455,.5));
+  const d=new THREE.DirectionalLight(0xffeedd,1.2);d.position.set(8,15,6);d.castShadow=true;
+  d.shadow.mapSize.set(2048,2048);d.shadow.camera.near=.5;d.shadow.camera.far=50;
+  d.shadow.camera.left=-15;d.shadow.camera.right=15;d.shadow.camera.top=15;d.shadow.camera.bottom=-15;SC.add(d);
+  const m=new THREE.PointLight(0x6688cc,.6,40);m.position.set(-5,12,-5);SC.add(m);
+  const t1=new THREE.PointLight(0xff6600,1.5,8);t1.position.set(2,2.5,2);SC.add(t1);
+  const t2=new THREE.PointLight(0xff4400,1,6);t2.position.set(-3,2.5,-1);SC.add(t2);
+  const gg=new THREE.PlaneGeometry(20,20,40,40);const pp=gg.attributes.position;
+  for(let i=0;i<pp.count;i++)pp.setZ(i,(Math.random()-.5)*.15);gg.computeVertexNormals();
+  const gm=new THREE.Mesh(gg,new THREE.MeshStandardMaterial({color:0x1a2a18,roughness:.95}));
+  gm.rotation.x=-Math.PI/2;gm.receiveShadow=true;gm.position.y=-.05;SC.add(gm);
+  const gh=new THREE.GridHelper(20,20,0x1a3a2a,0x122218);gh.position.y=.01;SC.add(gh);
+  for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=8+Math.random()*3;addTree(Math.cos(a)*r,Math.sin(a)*r,.6+Math.random()*.8)}
+  for(let i=0;i<20;i++){const rx=(Math.random()-.5)*18,rz=(Math.random()-.5)*18;if(Math.abs(rx)<4&&Math.abs(rz)<4)continue;
+    const rb=new THREE.Mesh(new THREE.DodecahedronGeometry(.08+Math.random()*.12,0),new THREE.MeshStandardMaterial({color:0x3a3a38,roughness:.9}));
+    rb.position.set(rx,.05,rz);rb.rotation.set(Math.random()*6,Math.random()*6,Math.random()*6);SC.add(rb)}
+  rebuild3D();updCam();
+  addEventListener("resize",()=>{R.setSize(innerWidth,innerHeight);CAM.aspect=innerWidth/innerHeight;CAM.updateProjectionMatrix()});
+  anim3D();
+}
+function addTree(x,z,s){const g=new THREE.Group();
+  const tr=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.1*s,.8*s,6),new THREE.MeshStandardMaterial({color:0x3d2b1f,roughness:.9}));tr.position.y=.4*s;tr.castShadow=true;g.add(tr);
+  const lv=new THREE.Mesh(new THREE.SphereGeometry(.4*s,6,5),new THREE.MeshStandardMaterial({color:Math.random()>.3?0x1a3a1a:0x2a4a1a,roughness:.85}));lv.position.y=.9*s;lv.castShadow=true;g.add(lv);
+  g.position.set(x,0,z);SC.add(g)}
+function mkBld(b,k){const g=new THREE.Group();
+  if(b.l<=0){const bs=new THREE.Mesh(new THREE.BoxGeometry(b.w,.08,b.d),new THREE.MeshStandardMaterial({color:0x333840,roughness:.9,transparent:true,opacity:.5}));bs.position.y=.04;g.add(bs);
+    const gh=new THREE.Mesh(new THREE.BoxGeometry(b.w*.9,.6,b.d*.9),new THREE.MeshStandardMaterial({color:0x445566,transparent:true,opacity:.15,wireframe:true}));gh.position.y=.35;g.add(gh);
+  }else{const h=.5+b.l*.3+(k==="hq"?.5:0);
+    const cs={hq:0x8B7355,farm:0x5a7a3a,mill:0x7a6a3a,barracks:0x6a3a3a,wall:0x5a5a58,tower:0x4a5a6a,workshop:0x5a4a3a,hospital:0x6a8a8a};
+    const cl=cs[k]||0x666;
+    const fd=new THREE.Mesh(new THREE.BoxGeometry(b.w+.1,.12,b.d+.1),new THREE.MeshStandardMaterial({color:0x2a2820,roughness:.95}));fd.position.y=.06;fd.receiveShadow=true;g.add(fd);
+    if(k==="hq"){const mn=new THREE.Mesh(new THREE.BoxGeometry(b.w*.85,h,b.d*.85),new THREE.MeshStandardMaterial({color:cl,roughness:.7,metalness:.1}));mn.position.y=h/2+.1;mn.castShadow=true;g.add(mn);
+      const rf=new THREE.Mesh(new THREE.ConeGeometry(b.w*.7,.5,4),new THREE.MeshStandardMaterial({color:0x4a3020,roughness:.8}));rf.position.y=h+.35;rf.rotation.y=Math.PI/4;rf.castShadow=true;g.add(rf);
+      for(const wx of[-.4,.4]){const w=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.05),new THREE.MeshStandardMaterial({color:0xffcc66,emissive:0xffaa22,emissiveIntensity:.5}));w.position.set(wx,h*.55,b.d*.43);g.add(w)}
+    }else if(k==="tower"){const tw=new THREE.Mesh(new THREE.CylinderGeometry(.25,.35,h*1.5,8),new THREE.MeshStandardMaterial({color:cl,roughness:.75,metalness:.15}));tw.position.y=h*.75+.1;tw.castShadow=true;g.add(tw);
+      const tp=new THREE.Mesh(new THREE.ConeGeometry(.4,.4,8),new THREE.MeshStandardMaterial({color:0x3a4a5a}));tp.position.y=h*1.5+.3;g.add(tp);
+      const sl=new THREE.PointLight(0xffaa44,.8,5);sl.position.set(0,h*1.5+.1,0);g.add(sl);
+    }else{const mn=new THREE.Mesh(new THREE.BoxGeometry(b.w*.8,h,b.d*.8),new THREE.MeshStandardMaterial({color:cl,roughness:.75}));mn.position.y=h/2+.1;mn.castShadow=true;g.add(mn);
+      const rf=new THREE.Mesh(new THREE.BoxGeometry(b.w*.9,.08,b.d*.9),new THREE.MeshStandardMaterial({color:0x3a3a38}));rf.position.y=h+.14;g.add(rf)}
+    if(b.l>=2){const fp=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.6,4),new THREE.MeshStandardMaterial({color:0x888,metalness:.5}));fp.position.set(b.w*.35,h+.4,b.d*.35);g.add(fp);
+      const fl=new THREE.Mesh(new THREE.PlaneGeometry(.2,.12),new THREE.MeshStandardMaterial({color:0xf59e0b,side:THREE.DoubleSide,emissive:0xf59e0b,emissiveIntensity:.3}));fl.position.set(b.w*.35+.1,h+.6,b.d*.35);g.add(fl)}}
+  g.position.set(b.x,0,b.z);g.userData={k,ph:Math.random()*6.28};return g}
+function rebuild3D(){for(const k in BM)SC.remove(BM[k]);BM={};for(const[k,b]of Object.entries(S.buildings)){const m=mkBld(b,k);BM[k]=m;SC.add(m)}}
+function updCam(){const d=S.cd;CAM.position.set(Math.sin(S.cr)*Math.cos(S.ca)*d,Math.sin(S.ca)*d,Math.cos(S.cr)*Math.cos(S.ca)*d);CAM.lookAt(0,.5,0)}
+function anim3D(){requestAnimationFrame(anim3D);const t=CLK.getElapsedTime();for(const[k,m]of Object.entries(BM))if(S.buildings[k].l>0)m.position.y=Math.sin(t*1.2+m.userData.ph)*.012;R.render(SC,CAM)}
+
+/* ===== WEATHER ===== */
+const wc=$("wcanvas"),wx=wc.getContext("2d");let pts=[];
+function initW(){wc.width=innerWidth;wc.height=innerHeight;pts=[];for(let i=0;i<50;i++)pts.push({x:Math.random()*wc.width,y:Math.random()*wc.height,r:.5+Math.random()*1.5,s:.3+Math.random()*.7,o:.12+Math.random()*.2,d:(Math.random()-.5)*.3});animW()}
+function animW(){requestAnimationFrame(animW);wx.clearRect(0,0,wc.width,wc.height);for(const p of pts){p.y+=p.s;p.x+=p.d;if(p.y>wc.height){p.y=-5;p.x=Math.random()*wc.width}wx.beginPath();wx.arc(p.x,p.y,p.r,0,Math.PI*2);wx.fillStyle=`rgba(180,200,220,${p.o})`;wx.fill()}}
+addEventListener("resize",()=>{wc.width=innerWidth;wc.height=innerHeight});
+
+/* ===== CAMERA ===== */
+document.querySelectorAll("[data-cam]").forEach(b=>b.onclick=()=>{const a=b.dataset.cam;if(a==="in")S.cd=Math.max(5,S.cd-2);if(a==="out")S.cd=Math.min(25,S.cd+2);if(a==="home"){S.cd=12;S.ca=Math.PI/4;S.cr=-Math.PI/4}updCam()});
+let cdrag=false,csx,csy;const cl=$("camera-layer");
+cl.onpointerdown=e=>{cdrag=true;csx=e.clientX;csy=e.clientY;cl.setPointerCapture(e.pointerId)};
+cl.onpointermove=e=>{if(!cdrag)return;S.cr-=(e.clientX-csx)*.008;S.ca=Math.max(.15,Math.min(1.2,S.ca+(e.clientY-csy)*.005));csx=e.clientX;csy=e.clientY;updCam()};
+cl.onpointerup=cl.onpointercancel=()=>cdrag=false;
+
+/* ===== PRODUCTION ===== */
+setInterval(()=>{const fm=1+techFx("fprod");for(const b of Object.values(S.buildings))if(b.l>0&&b.prod){const c=S[b.prod.r+"cap"]||S.fcap;S[b.prod.r]=Math.min(c,S[b.prod.r]+b.prod.v*b.l*fm)}updHUD()},3000);
+
+/* ===== HUD ===== */
+function updHUD(){
+  $("rfood").textContent=fmt(S.food);$("rwood").textContent=fmt(S.wood);$("rparts").textContent=fmt(S.parts);
+  const cm=1+techFx("cap");$("rfcap").textContent=fmt(S.fcap*cm);$("rwcap").textContent=fmt(S.wcap*cm);$("rpcap").textContent=fmt(S.pcap*cm);
+  $("hlvl").textContent=S.buildings.hq.l;$("ppw").textContent=fmt(pw());$("prat").textContent=fmt(S.rating);
+  $("plvl").textContent=S.plvl;$("xpfill").style.width=(S.xp/S.xpNext*100)+"%";
+  const q=S.quests[S.qi];if(q){$("chn").textContent=`Глава ${S.qi+1}`;$("cht").textContent=q.done?"✅ "+q.t:q.t}else{$("chn").textContent="Все";$("cht").textContent="выполнены!"}}
+
+/* ===== TABS ===== */
+const TABS={
+  base:{s:["buildings","heroes","rewards"],d:"buildings"},
+  territory:{s:["expedition","wmap"],d:"expedition"},
+  heroes:{s:["roster","recruit"],d:"roster"},
+  army:{s:["troops","tech"],d:"troops"},
+  craft:{s:["forge","inventory"],d:"forge"},
+  alliance:{s:["ally","members"],d:"ally"},
+  battle:{s:["defense","pvp"],d:"defense"},
+};
+const SN={buildings:"🏛 Здания",heroes:"♙ Герои",rewards:"🏆 Награды",expedition:"🗺 Экспедиции",wmap:"🌍 Карта",roster:"📋 Отряд",recruit:"🎰 Вербовка",troops:"⚑ Войска",tech:"🔬 Лаб",forge:"⚒ Кузня",inventory:"🎒 Инвентарь",ally:"👥 Альянс",members:"📋 Состав",defense:"🧟 Оборона",pvp:"⚔ PvP"};
+
+function rNav(){const n=$("mnav");n.innerHTML="";
+  [{id:"base",i:"⌂",l:"База"},{id:"territory",i:"▧",l:"Земли"},{id:"heroes",i:"★",l:"Герои"},{id:"army",i:"⚑",l:"Армия"},{id:"craft",i:"⚒",l:"Крафт"},{id:"alliance",i:"👥",l:"Альянс"},{id:"battle",i:"⚔",l:"Бой"}].forEach(t=>{
+    const b=document.createElement("button");b.className=t.id===S.tab?"act":"";b.innerHTML=`<b>${t.i}</b>${t.l}`;b.onclick=()=>swTab(t.id);n.appendChild(b)})}
+function rSub(){const b=$("subtabs");b.innerHTML="";const c=TABS[S.tab];if(!c||!c.s.length)return;
+  c.s.forEach(s=>{const bt=document.createElement("button");bt.className=s===S.sub?"act":"";bt.textContent=SN[s]||s;bt.onclick=()=>{S.sub=s;rSub();rPanel()};b.appendChild(bt)});
+  const cb=document.createElement("button");cb.className="sz";cb.textContent=$("dock").classList.contains("col")?"▴":"▾";
+  cb.onclick=()=>{$("dock").classList.toggle("col");cb.textContent=$("dock").classList.contains("col")?"▴":"▾"};b.appendChild(cb)}
+function swTab(id){S.tab=id;S.sub=TABS[id].d||"";$("dock").classList.remove("col");rNav();rSub();rPanel()}
+
+/* ===== PANELS ===== */
+function rPanel(){const p=$("panel");
+  switch(S.sub){
+    case"buildings":rBuildings(p);break;case"heroes":case"roster":rHeroes(p);break;case"rewards":rRewards(p);break;
+    case"recruit":rRecruit(p);break;case"expedition":rExps(p);break;case"defense":rDefense(p);break;
+    case"pvp":rPvP(p);break;case"troops":rTroops(p);break;case"tech":rTech(p);break;
+    case"wmap":rWMap(p);break;case"forge":rForge(p);break;case"inventory":rInv(p);break;
+    case"ally":rAlly(p);break;case"members":rMembers(p);break;
+    default:p.innerHTML=`<p style="text-align:center;color:var(--muted);padding:20px">🏗 В разработке</p>`}}
+
+function rBuildings(p){let h='<div class="g2">';for(const[k,b]of Object.entries(S.buildings)){const bl=b.l>0;
+  const ct=Object.entries(b.cost).map(([r,v])=>{const nd=v*(b.l+1);const ic={food:"🍅",wood:"🪵",parts:"⚙"};return`<span style="color:${S[r]>=nd?"#4ade80":"#ef4444"}">${ic[r]}${nd}</span>`}).join(" ");
+  const ca=Object.entries(b.cost).every(([r,v])=>S[r]>=v*(b.l+1));
+  h+=`<div class="cd"><div class="ci">${b.i}</div><div class="ct">${b.n} <span class="cl">Ур.${b.l}</span></div>
+  <p>${bl?`HP:${b.hp}/${b.mhp}`:"Не построено"}</p>${b.prod&&bl?`<p style="color:#4ade80">+${Math.floor(b.prod.v*b.l*(1+techFx("fprod")))} ${b.prod.r}/цикл</p>`:""}
+  <div class="cb"><div class="cbf" style="width:${bl?b.hp/b.mhp*100:0}%;background:${b.hp/b.mhp>.5?"#22c55e":"#ef4444"}"></div></div>
+  <p style="font-size:8px">${ct}</p><button ${ca?"":"disabled"} onclick="upg('${k}')">${bl?"⬆ Улучшить":"🔨 Построить"}</button></div>`}
+  h+='</div>';p.innerHTML=h}
+
+window.upg=function(k){const b=S.buildings[k],m=b.l+1;for(const[r,v]of Object.entries(b.cost))if(S[r]<v*m){toast("Недостаточно!");return}
+  for(const[r,v]of Object.entries(b.cost))S[r]-=v*m;b.l++;b.mhp=Math.floor(b.mhp*1.3);b.hp=b.mhp;b.pw=Math.floor(b.pw*1.4);
+  if(k==="hq"){S.fcap=500*b.l;S.wcap=500*b.l;S.pcap=500*b.l}
+  rebuild3D();chkQ();xp(15*b.l);toast(`${b.n} → Ур.${b.l}!`);fly(`+${b.pw}⚔`,"#fbbf24");updHUD();rPanel();save()};
+
+function rHeroes(p){let h="";const atkB=techFx("hatk"),hpB=techFx("hhp");
+  for(let i=0;i<S.heroes.length;i++){const hr=S.heroes[i];const rc="r"+hr.r[0];
+    const tatk=Math.floor(hr.atk*(1+atkB)+(hr.wpn?hr.wpn.val:0));
+    const tdef=Math.floor(hr.def+(hr.arm?hr.arm.val:0));
+    const thp=Math.floor(hr.hp*(1+hpB));
+    h+=`<div class="hr ${hr.eq?"sel":""}"><div class="hav ${rc}">${hr.i}</div><div class="hri">
+    <b>${hr.n} <span class="rar ${rc}">${hr.r}</span></b>
+    <small>Ур.${hr.l} ⚔${tatk} 🛡${tdef} ❤${thp} | ${hr.sk}</small>
+    <div style="margin-top:3px"><span class="eqslot ${hr.wpn?"filled":""}">${hr.wpn?hr.wpn.i:"⚔"}</span><span class="eqslot ${hr.arm?"filled":""}">${hr.arm?hr.arm.i:"🛡"}</span></div>
+    </div><button class="cbtn" style="padding:5px 8px;font-size:9px" onclick="upH(${i})">⬆🍅${hr.l*20}</button></div>`}
+  p.innerHTML=h}
+
+window.upH=function(i){const h=S.heroes[i],c=h.l*20;if(S.food<c){toast("Нужно 🍅"+c);return}S.food-=c;h.l++;h.atk=Math.floor(h.atk*1.15);h.def=Math.floor(h.def*1.12);h.hp=Math.floor(h.hp*1.1);xp(10);toast(`${h.n} → Ур.${h.l}!`);updHUD();rPanel();save()};
+
+function rRecruit(p){p.innerHTML=`<div class="gacha"><h4>🎰 Вербовка</h4><p>⚙40 за нового выжившего</p><button onclick="doRec()" ${S.parts>=40?"":"disabled"}>Вербовать (⚙40)</button></div><p style="text-align:center;color:var(--muted);font-size:10px">Героев: ${S.heroes.length}</p>`}
+window.doRec=function(){if(S.parts<40)return;S.parts-=40;const rs=["common","common","rare","rare","epic","legendary"];const r=rs[Math.floor(Math.random()*rs.length)];
+  const ns=["Кэрол","Абрахам","Розита","Юджин","Нигэн","Иисус","Аарон","Эзекиэль"],is=["👩‍🦳","💪","💃","🤓","🏏","🥋","🤝","👑"];
+  const ni=Math.floor(Math.random()*ns.length);const atk=r==="legendary"?25:r==="epic"?18:r==="rare"?14:10;
+  S.heroes.push({n:ns[ni],i:is[ni],r,l:1,atk,def:atk-4,hp:80+Math.floor(Math.random()*30),sk:"Удар",eq:false,wpn:null,arm:null});
+  xp(20);toast(`Найден ${ns[ni]}! [${r}]`);fly(`★ ${ns[ni]}`,"#fbbf24");updHUD();rPanel();save()};
+
+function rRewards(p){const dr=[{d:1,i:"🍅",a:50},{d:2,i:"🪵",a:50},{d:3,i:"⚙",a:30},{d:4,i:"🍅",a:100},{d:5,i:"🪵",a:100},{d:6,i:"⚙",a:60},{d:7,i:"🎁",a:0}];
+  let h='<h4 style="font-size:12px;color:#fbbf24;margin:0 0 6px">Ежедневные награды</h4><div class="rwstrip">';
+  for(const r of dr){const td=r.d===S.dday+1,cl=r.d<=S.dday;h+=`<div class="rwd ${td?"today":""} ${cl?"done":""}"><small>Д${r.d}</small><span>${r.i}</span><b>${r.a||"★"}</b></div>`}
+  h+='</div>';const cc=!S.dclaim&&S.dday<7;
+  h+=`<button ${cc?"":"disabled"} onclick="clDaily()" style="width:100%;background:linear-gradient(180deg,#16a34a,#15803d);color:#fff;font-weight:800;padding:9px;border-radius:7px;font-size:11px;margin-bottom:12px">${cc?"🎁 Забрать":S.dday>=7?"✅ Все":"⏳ Уже"}</button>`;
+  h+='<h4 style="font-size:12px;color:#fbbf24;margin:0 0 6px">Задания</h4>';
+  for(let i=0;i<S.quests.length;i++){const q=S.quests[i];h+=`<div class="quest-card" style="${q.done?"opacity:.5":""}"><div class="qn">Задание ${i+1}</div><h3>${q.done?"✅ ":""}${q.t}</h3><p>${q.d}</p><div class="qr">Награда: ${Object.entries(q.rw).map(([r,v])=>`${r}+${v}`).join(", ")}</div></div>`}
+  p.innerHTML=h}
+window.clDaily=function(){if(S.dclaim||S.dday>=7)return;S.dday++;S.dclaim=true;const rw=[{r:"food",a:50},{r:"wood",a:50},{r:"parts",a:30},{r:"food",a:100},{r:"wood",a:100},{r:"parts",a:60},{r:"parts",a:100}];
+  const r=rw[S.dday-1];if(r)S[r.r]=Math.min(S[r.r+"cap"]||9999,S[r.r]+r.a);xp(15);toast(`День ${S.dday}!`);setTimeout(()=>{S.dclaim=false;save()},6e4);updHUD();rPanel();save()};
+
+function rExps(p){if(!S.exps.length)S.exps=[{n:"Супермаркет",dur:30,st:0,rw:{food:80,parts:20},dg:1},{n:"Вырубка",dur:45,st:0,rw:{wood:120},dg:2},{n:"Военная база",dur:60,st:0,rw:{parts:60,food:40},dg:3}];
+  let h='<h4 style="font-size:12px;color:#fbbf24;margin:0 0 8px">🗺 Экспедиции</h4>';
+  for(let i=0;i<S.exps.length;i++){const e=S.exps[i],now=Date.now()/1e3,el=e.st?now-e.st:0,pr=e.st?Math.min(1,el/e.dur):0,dn=pr>=1,ac=e.st>0&&!dn,rm=ac?Math.ceil(e.dur-el):0;
+    h+=`<div class="exp-card"><div class="exp-top"><span>${e.n}</span><span style="color:${e.dg>2?"#ef4444":"#fbbf24"}">⚠${e.dg}</span></div>
+    <p>${Object.entries(e.rw).map(([r,v])=>`${r}+${v}`).join(", ")}</p><div class="eb"><div class="ebf" style="width:${pr*100}%"></div></div>
+    <button class="${dn?"rdy":""}" onclick="expA(${i})" ${!e.st||dn?"":"disabled"}>${dn?"🎁 Забрать":ac?`⏱${rm}с`:`🚀 ${e.dur}с`}</button></div>`}
+  p.innerHTML=h}
+window.expA=function(i){const e=S.exps[i],now=Date.now()/1e3;if(!e.st){e.st=now;toast(`"${e.n}" началась!`)}else if(now-e.st>=e.dur){for(const[r,v]of Object.entries(e.rw))S[r]=Math.min(S[r+"cap"]||9999,S[r]+v);e.st=0;xp(20);toast("Экспедиция завершена!");fly("+Ресурсы","#4ade80")}updHUD();rPanel();save()};
+setInterval(()=>{if(S.sub==="expedition")rPanel()},1e3);
+
+function rDefense(p){const eq=S.heroes.filter(h=>h.eq||S.heroes.indexOf(h)<2);
+  p.innerHTML=`<div style="text-align:center;padding:8px 0"><h4 style="color:#ef4444;font-size:14px;margin:0 0 5px">🧟 Оборона базы</h4>
+  <p style="color:var(--muted);font-size:10px;margin:0 0 10px">Реалтайм экшн с джойстиком</p>
+  <div style="display:flex;justify-content:center;gap:6px;margin-bottom:10px">${eq.slice(0,3).map(h=>`<div class="hav r${h.r[0]}" style="width:44px;height:44px;font-size:20px">${h.i}</div>`).join("")}</div>
+  <div style="display:flex;justify-content:center;gap:12px;margin-bottom:12px"><div><b style="color:#fff;font-size:15px">${S.awaves}</b><br><span style="font-size:8px;color:var(--muted)">ВОЛН</span></div><div><b style="color:#fff;font-size:15px">${S.akills}</b><br><span style="font-size:8px;color:var(--muted)">УБИЙСТВ</span></div></div>
+  <button onclick="startArena()" style="background:linear-gradient(180deg,#dc2626,#991b1b);color:#fff;font-weight:900;padding:11px 28px;border-radius:9px;font-size:13px;box-shadow:0 4px 18px rgba(220,38,38,.4)">⚔ Начать обор
