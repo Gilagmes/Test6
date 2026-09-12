@@ -1,0 +1,9 @@
+{
+  "name": "the-last-port-render",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Render-ready build of The Last Port",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
