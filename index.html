@@ -1,0 +1,2864 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>The Last Port v4.2 — Siege Update</title>
+<style>
+/* ======================== CSS VARIABLES ======================== */
+:root {
+  --bg-dark: #0a0e14;
+  --bg-panel: #12181f;
+  --bg-card: #1a2230;
+  --bg-hover: #243044;
+  --accent: #e8a624;
+  --accent-dim: #b8841a;
+  --danger: #e84040;
+  --heal: #44cc66;
+  --shield: #4488ee;
+  --text: #e0ddd4;
+  --text-dim: #8899aa;
+  --border: #2a3444;
+  --radius: 8px;
+  --shadow: 0 4px 20px rgba(0,0,0,.5);
+  --font: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ======================== RESET & BASE ======================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg-dark);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  border-radius: var(--radius);
+  transition: all .2s;
+}
+button:active { transform: scale(.96); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ======================== LAYOUT ======================== */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* TOP BAR */
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  flex-shrink: 0;
+}
+#topbar .res-group {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.res-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.res-item .ico { font-size: 16px; }
+.res-item .val { color: var(--text); font-weight: 600; }
+#topbar .info-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* MAIN AREA */
+#main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* BASE VIEW (isometric grid) */
+#base-view {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0d1117;
+}
+#base-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+#camera-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 20;
+}
+#camera-controls button {
+  width: 36px; height: 36px;
+  background: var(--bg-panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#camera-controls button:hover { background: var(--bg-hover); }
+
+/* SIDE PANEL */
+#side-panel {
+  width: 380px;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+#panel-header {
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#panel-header .close-btn {
+  background: none;
+  color: var(--text-dim);
+  font-size: 20px;
+  padding: 2px 6px;
+}
+#panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+/* BOTTOM NAV */
+#bottombar {
+  display: flex;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  flex-shrink: 0;
+}
+#bottombar button {
+  flex: 1;
+  padding: 8px 4px;
+  background: none;
+  color: var(--text-dim);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+#bottombar button:last-child { border-right: none; }
+#bottombar button .nav-ico { font-size: 20px; }
+#bottombar button.active { color: var(--accent); background: rgba(232,166,36,.08); }
+#bottombar button:hover { color: var(--accent); }
+#bottombar button .badge {
+  position: absolute;
+  top: 4px; right: 20%;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+/* ======================== CARDS ======================== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.card-row .label { color: var(--text-dim); }
+
+/* BUTTONS */
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+  padding: 8px 16px;
+  font-weight: 700;
+  width: 100%;
+}
+.btn-primary:hover { background: var(--accent-dim); }
+.btn-primary:disabled {
+  background: var(--border);
+  color: var(--text-dim);
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-secondary {
+  background: var(--bg-hover);
+  color: var(--text);
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--border); }
+.btn-danger {
+  background: rgba(232,64,64,.15);
+  color: var(--danger);
+  padding: 6px 12px;
+  border: 1px solid rgba(232,64,64,.3);
+}
+.btn-small {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+/* PROGRESS BAR */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-dark);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+.progress-bar .fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .3s;
+}
+.fill-accent { background: var(--accent); }
+.fill-danger { background: var(--danger); }
+.fill-heal { background: var(--heal); }
+.fill-shield { background: var(--shield); }
+
+/* HERO CARD */
+.hero-card {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.hero-card:hover { border-color: var(--accent); }
+.hero-card.selected { border-color: var(--accent); box-shadow: 0 0 12px rgba(232,166,36,.2); }
+.hero-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.hero-info { flex: 1; min-width: 0; }
+.hero-name { font-weight: 700; font-size: 13px; }
+.hero-class { font-size: 11px; color: var(--text-dim); }
+.hero-stats { display: flex; gap: 10px; margin-top: 4px; font-size: 11px; }
+.hero-stats span { color: var(--text-dim); }
+.hero-stats .stat-val { color: var(--text); font-weight: 600; }
+.rarity-common { border-left: 3px solid #888; }
+.rarity-rare { border-left: 3px solid #4488ee; }
+.rarity-epic { border-left: 3px solid #aa44ee; }
+.rarity-legendary { border-left: 3px solid #ee8800; }
+
+/* BUILDING LIST ITEM */
+.building-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.building-item:hover { border-color: var(--accent); }
+.building-ico {
+  width: 48px; height: 48px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: var(--bg-dark);
+  flex-shrink: 0;
+}
+.building-info { flex: 1; }
+.building-name { font-weight: 700; font-size: 13px; }
+.building-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.building-level { font-size: 11px; color: var(--accent); }
+.building-constructing {
+  border-color: var(--accent) !important;
+  animation: pulse-border 2s infinite;
+}
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--accent); }
+  50% { border-color: var(--border); }
+}
+
+/* COST ROW */
+.cost-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+.cost-item {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-dark);
+}
+.cost-item.affordable { color: var(--heal); }
+.cost-item.expensive { color: var(--danger); }
+
+/* QUEST ITEM */
+.quest-item {
+  padding: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+}
+.quest-title { font-weight: 700; font-size: 13px; }
+.quest-desc { font-size: 12px; color: var(--text-dim); margin: 4px 0; }
+.quest-reward {
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+/* BATTLE SCENE */
+#battle-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,.92);
+  z-index: 500;
+  display: none;
+  flex-direction: column;
+}
+#battle-overlay.active { display: flex; }
+#battle-header {
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+#battle-header .wave-info { font-weight: 700; font-size: 15px; }
+#battle-header .wave-type { font-size: 12px; color: var(--text-dim); }
+#battle-arena {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+#battle-canvas {
+  width: 100%;
+  height: 100%;
+}
+#battle-hud {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 10px;
+  background: linear-gradient(transparent, rgba(0,0,0,.85));
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.battle-hero-hud {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  text-align: center;
+}
+.battle-hero-hud .bh-name { font-size: 11px; font-weight: 700; }
+.battle-hero-hud .bh-hp-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-dark);
+  border-radius: 3px;
+  margin: 4px 0;
+  overflow: hidden;
+}
+.battle-hero-hud .bh-hp-fill {
+  height: 100%;
+  background: var(--heal);
+  border-radius: 3px;
+  transition: width .3s;
+}
+.battle-hero-hud .bh-skill {
+  margin-top: 4px;
+}
+.battle-hero-hud .bh-skill button {
+  width: 100%;
+  padding: 4px;
+  font-size: 10px;
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+}
+.battle-hero-hud .bh-skill button:disabled {
+  background: var(--border);
+  color: var(--text-dim);
+}
+#battle-controls {
+  padding: 8px 16px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+#battle-controls button {
+  padding: 8px 20px;
+  font-weight: 700;
+}
+
+/* BATTLE RESULT */
+#battle-result {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,.9);
+  z-index: 600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#battle-result.active { display: flex; }
+.result-box {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+.result-box h2 {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+.result-box .result-victory { color: var(--accent); }
+.result-box .result-defeat { color: var(--danger); }
+.result-stats {
+  margin: 16px 0;
+  text-align: left;
+}
+.result-stats .rs-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.result-rewards {
+  margin: 12px 0;
+  text-align: left;
+}
+.result-rewards h4 { color: var(--accent); margin-bottom: 6px; font-size: 13px; }
+.result-rewards .rr-item {
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+/* MODAL */
+#modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,.7);
+  z-index: 400;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#modal-overlay.active { display: flex; }
+.modal-box {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-box h3 { margin-bottom: 12px; }
+
+/* TOAST */
+#toast-container {
+  position: fixed;
+  top: 50px;
+  right: 12px;
+  z-index: 800;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+.toast {
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  animation: toast-in .3s, toast-out .3s 2.7s forwards;
+  box-shadow: var(--shadow);
+  max-width: 300px;
+}
+.toast-success { border-left: 3px solid var(--heal); }
+.toast-warning { border-left: 3px solid var(--accent); }
+.toast-danger { border-left: 3px solid var(--danger); }
+@keyframes toast-in { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toast-out { to { opacity: 0; transform: translateX(40px); } }
+
+/* TABS */
+.tab-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 6px;
+  background: var(--bg-dark);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+}
+.tab-btn.active {
+  background: var(--accent);
+  color: #000;
+}
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* MISC */
+.text-accent { color: var(--accent); }
+.text-dim { color: var(--text-dim); }
+.text-danger { color: var(--danger); }
+.text-heal { color: var(--heal); }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.text-center { text-align: center; }
+.text-sm { font-size: 12px; }
+.fw-700 { font-weight: 700; }
+.gap-6 { gap: 6px; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  #side-panel { width: 100%; position: absolute; top: 0; bottom: 0; right: -100%; z-index: 200; transition: right .3s; }
+  #side-panel.open { right: 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="res-group">
+      <div class="res-item"><span class="ico">🍖</span><span class="val" id="res-food">0</span></div>
+      <div class="res-item"><span class="ico">🪵</span><span class="val" id="res-wood">0</span></div>
+      <div class="res-item"><span class="ico">⚙️</span><span class="val" id="res-metal">0</span></div>
+      <div class="res-item"><span class="ico">⛽</span><span class="val" id="res-fuel">0</span></div>
+      <div class="res-item"><span class="ico">💊</span><span class="val" id="res-meds">0</span></div>
+      <div class="res-item"><span class="ico">💎</span><span class="val" id="res-gems">0</span></div>
+    </div>
+    <div class="info-group">
+      <span id="hud-day">День 1</span>
+      <span id="hud-time">06:00</span>
+      <span id="hud-weather">☀️</span>
+      <span id="hud-season">Весна</span>
+      <span id="hud-pop">👤 0/10</span>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <!-- BASE VIEW -->
+    <div id="base-view">
+      <canvas id="base-canvas"></canvas>
+      <div id="camera-controls">
+        <button onclick="Camera.zoomIn()" title="Приблизить">+</button>
+        <button onclick="Camera.zoomOut()" title="Отдалить">−</button>
+        <button onclick="Camera.reset()" title="Сбросить">⌂</button>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div id="side-panel">
+      <div id="panel-header">
+        <span id="panel-title">Меню</span>
+        <button class="close-btn" onclick="Panel.close()">✕</button>
+      </div>
+      <div id="panel-content"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottombar">
+    <button onclick="Nav.go('base')" id="nav-base"><span class="nav-ico">🏚️</span>База</button>
+    <button onclick="Nav.go('build')" id="nav-build"><span class="nav-ico">🔨</span>Строить</button>
+    <button onclick="Nav.go('heroes')" id="nav-heroes"><span class="nav-ico">👥</span>Выжившие</button>
+    <button onclick="Nav.go('battle')" id="nav-battle"><span class="nav-ico">⚔️</span>Оборона</button>
+    <button onclick="Nav.go('map')" id="nav-map"><span class="nav-ico">🗺️</span>Карта</button>
+    <button onclick="Nav.go('quests')" id="nav-quests"><span class="nav-ico">📋</span>Задания</button>
+    <button onclick="Nav.go('more')" id="nav-more"><span class="nav-ico">☰</span>Ещё</button>
+  </div>
+</div>
+
+<!-- BATTLE OVERLAY -->
+<div id="battle-overlay">
+  <div id="battle-header">
+    <div>
+      <div class="wave-info" id="battle-wave-info">Волна 1</div>
+      <div class="wave-type" id="battle-wave-type">Обычная</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="battle-kills" style="font-size:13px;">☠️ 0</span>
+      <span id="battle-timer" style="font-size:13px;color:var(--text-dim);">00:00</span>
+    </div>
+  </div>
+  <div id="battle-arena">
+    <canvas id="battle-canvas"></canvas>
+    <div id="battle-hud"></div>
+  </div>
+  <div id="battle-controls">
+    <button class="btn-secondary" onclick="BattleScene.toggleSpeed()" id="btn-speed">⏩ x1</button>
+    <button class="btn-danger" onclick="BattleScene.retreat()">🏃 Отступить</button>
+  </div>
+</div>
+
+<!-- BATTLE RESULT -->
+<div id="battle-result">
+  <div class="result-box" id="result-box"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" onclick="Modal.close()">
+  <div class="modal-box" id="modal-box" onclick="event.stopPropagation()"></div>
+</div>
+
+<!-- TOASTS -->
+<div id="toast-container"></div>
+
+<script>
+/* ================================================================
+   THE LAST PORT v4.2 — SIEGE UPDATE
+   Complete Survival Strategy Game
+   ================================================================ */
+
+// ======================== CONFIG: RESOURCES ========================
+const RES_NAMES = {
+  food: '🍖 Еда', wood: '🪵 Дерево', metal: '⚙️ Металл',
+  fuel: '⛽ Топливо', meds: '💊 Медикаменты', gems: '💎 Кристаллы'
+};
+
+// ======================== CONFIG: BUILDINGS ========================
+const BUILDINGS = {
+  hq: {
+    name: 'Штаб', icon: '🏛️', desc: 'Центр управления. Открывает новые здания.',
+    maxLevel: 15,
+    costs: lvl => ({ wood: 80*lvl, metal: 50*lvl, food: 40*lvl }),
+    time: lvl => 30 + lvl * 60,
+    effect: lvl => `Открывает здания до ур.${lvl}`,
+    production: null
+  },
+  farm: {
+    name: 'Ферма', icon: '🌾', desc: 'Производит еду для выживших.',
+    maxLevel: 15,
+    costs: lvl => ({ wood: 40*lvl, metal: 10*lvl }),
+    time: lvl => 15 + lvl * 30,
+    effect: lvl => `+${5 + lvl*3} еды/мин`,
+    production: { res: 'food', base: 5, perLvl: 3 }
+  },
+  sawmill: {
+    name: 'Лесопилка', icon: '🪓', desc: 'Добывает древесину.',
+    maxLevel: 15,
+    costs: lvl => ({ food: 30*lvl, metal: 15*lvl }),
+    time: lvl => 15 + lvl * 30,
+    effect: lvl => `+${4 + lvl*3} дерева/мин`,
+    production: { res: 'wood', base: 4, perLvl: 3 }
+  },
+  workshop: {
+    name: 'Мастерская', icon: '🔧', desc: 'Добывает металл и детали.',
+    maxLevel: 15,
+    costs: lvl => ({ wood: 50*lvl, food: 30*lvl }),
+    time: lvl => 20 + lvl * 35,
+    effect: lvl => `+${3 + lvl*2} металла/мин`,
+    production: { res: 'metal', base: 3, perLvl: 2 }
+  },
+  generator: {
+    name: 'Генератор', icon: '⚡', desc: 'Производит топливо для экспедиций.',
+    maxLevel: 10, reqHQ: 3,
+    costs: lvl => ({ metal: 60*lvl, wood: 40*lvl }),
+    time: lvl => 30 + lvl * 45,
+    effect: lvl => `+${2 + lvl*1} топлива/мин`,
+    production: { res: 'fuel', base: 2, perLvl: 1 }
+  },
+  hospital: {
+    name: 'Госпиталь', icon: '🏥', desc: 'Лечит раненых выживших. Производит медикаменты.',
+    maxLevel: 10, reqHQ: 2,
+    costs: lvl => ({ wood: 60*lvl, metal: 40*lvl, food: 20*lvl }),
+    time: lvl => 25 + lvl * 40,
+    effect: lvl => `Скорость лечения +${lvl*10}%`,
+    production: { res: 'meds', base: 1, perLvl: 1 }
+  },
+  barracks: {
+    name: 'Казарма', icon: '⚔️', desc: 'Тренирует бойцов. Увеличивает размер отряда.',
+    maxLevel: 10, reqHQ: 2,
+    costs: lvl => ({ wood: 70*lvl, metal: 50*lvl }),
+    time: lvl => 25 + lvl * 40,
+    effect: lvl => `Макс. бойцов: ${3 + Math.floor(lvl/2)}`,
+    production: null
+  },
+  watchtower: {
+    name: 'Сторожевая вышка', icon: '🗼', desc: 'Предупреждает об атаках. Даёт бонус обороне.',
+    maxLevel: 10, reqHQ: 3,
+    costs: lvl => ({ wood: 50*lvl, metal: 60*lvl }),
+    time: lvl => 30 + lvl * 50,
+    effect: lvl => `Оборона базы +${lvl*5}%`,
+    production: null
+  },
+  wall: {
+    name: 'Стена', icon: '🧱', desc: 'Защищает базу от атак зомби.',
+    maxLevel: 15,
+    costs: lvl => ({ wood: 30*lvl, metal: 30*lvl }),
+    time: lvl => 10 + lvl * 20,
+    effect: lvl => `Прочность: ${100 + lvl*50}`,
+    production: null
+  },
+  warehouse: {
+    name: 'Склад', icon: '📦', desc: 'Увеличивает лимит хранения ресурсов.',
+    maxLevel: 10,
+    costs: lvl => ({ wood: 40*lvl, metal: 20*lvl }),
+    time: lvl => 15 + lvl * 25,
+    effect: lvl => `Лимит ресурсов: ${500 + lvl*200}`,
+    production: null
+  },
+  lab: {
+    name: 'Лаборатория', icon: '🔬', desc: 'Изучает технологии.',
+    maxLevel: 10, reqHQ: 4,
+    costs: lvl => ({ metal: 80*lvl, fuel: 20*lvl }),
+    time: lvl => 45 + lvl * 60,
+    effect: lvl => `Доступ к исследованиям ур.${lvl}`,
+    production: null
+  },
+  kitchen: {
+    name: 'Кухня', icon: '🍳', desc: 'Готовит пайки. Бонус к морали.',
+    maxLevel: 8, reqHQ: 2,
+    costs: lvl => ({ wood: 30*lvl, food: 50*lvl }),
+    time: lvl => 15 + lvl * 25,
+    effect: lvl => `Мораль +${lvl*3}`,
+    production: null
+  }
+};
+
+// ======================== CONFIG: HEROES ========================
+const HERO_TEMPLATES = [
+  {
+    id: 'mara', name: 'Мара Вейл', icon: '🦊', classId: 'commander',
+    className: 'Командир', rarity: 'legendary',
+    desc: 'Бывший офицер. Вдохновляет бойцов и усиливает мораль.',
+    baseHP: 320, baseATK: 28, baseDEF: 22,
+    skill: { name: 'Боевой клич', desc: 'Все союзники получают +30% к ATK на 8 сек.', cooldown: 20, type: 'buff_atk', value: 0.3, duration: 8 },
+    avatarBG: '#cc6622'
+  },
+  {
+    id: 'cole', name: 'Коул Рейн', icon: '🎯', classId: 'shooter',
+    className: 'Стрелок', rarity: 'epic',
+    desc: 'Снайпер-одиночка. Наносит огромный урон с дистанции.',
+    baseHP: 240, baseATK: 42, baseDEF: 12,
+    skill: { name: 'Пробивающий выстрел', desc: 'Наносит 200% ATK одной цели.', cooldown: 15, type: 'damage_single', value: 2.0 },
+    avatarBG: '#446688'
+  },
+  {
+    id: 'iris', name: 'Айрис Шоу', icon: '🔍', classId: 'scout',
+    className: 'Разведчик', rarity: 'rare',
+    desc: 'Быстрая и незаметная. Открывает слабые места врагов.',
+    baseHP: 200, baseATK: 30, baseDEF: 14,
+    skill: { name: 'Метка цели', desc: 'Отмечает врага: он получает +50% урона 10 сек.', cooldown: 18, type: 'debuff_target', value: 0.5, duration: 10 },
+    avatarBG: '#228866'
+  },
+  {
+    id: 'victor', name: 'Виктор Кейн', icon: '🛡️', classId: 'tank',
+    className: 'Защитник', rarity: 'epic',
+    desc: 'Огромный и несокрушимый. Прикрывает команду собой.',
+    baseHP: 500, baseATK: 18, baseDEF: 35,
+    skill: { name: 'Стальной щит', desc: 'Блокирует 60% урона по команде 6 сек.', cooldown: 22, type: 'shield', value: 0.6, duration: 6 },
+    avatarBG: '#556688'
+  },
+  {
+    id: 'emma', name: 'Эмма Рид', icon: '💚', classId: 'medic',
+    className: 'Медик', rarity: 'rare',
+    desc: 'Полевой хирург. Лечит раненых прямо в бою.',
+    baseHP: 220, baseATK: 15, baseDEF: 18,
+    skill: { name: 'Массовое лечение', desc: 'Восстанавливает 25% HP всей команде.', cooldown: 25, type: 'heal_all', value: 0.25 },
+    avatarBG: '#44aa66'
+  },
+  {
+    id: 'tobias', name: 'Тобиас Грей', icon: '🔩', classId: 'engineer',
+    className: 'Инженер', rarity: 'rare',
+    desc: 'Изобретатель. Строит турели и ловушки в бою.',
+    baseHP: 250, baseATK: 22, baseDEF: 20,
+    skill: { name: 'Авто-турель', desc: 'Ставит турель: 15 DMG/сек 12 сек.', cooldown: 28, type: 'summon_turret', value: 15, duration: 12 },
+    avatarBG: '#886644'
+  }
+];
+
+// ======================== CONFIG: ENEMIES ========================
+const ENEMY_TYPES = [
+  { id: 'walker', name: 'Бродяга', icon: '🧟', hp: 60, atk: 8, speed: 0.4, xp: 5 },
+  { id: 'runner', name: 'Бегун', icon: '🏃‍♂️', hp: 40, atk: 12, speed: 0.9, xp: 8 },
+  { id: 'brute', name: 'Громила', icon: '👹', hp: 150, atk: 20, speed: 0.25, xp: 15 },
+  { id: 'spitter', name: 'Плевун', icon: '🤮', hp: 50, atk: 15, speed: 0.35, xp: 12, ranged: true },
+  { id: 'screamer', name: 'Крикун', icon: '😱', hp: 35, atk: 5, speed: 0.5, xp: 10, summons: true },
+];
+const BOSS_TYPES = [
+  { id: 'titan', name: 'Титан', icon: '💀', hp: 800, atk: 35, speed: 0.15, xp: 100 },
+  { id: 'queen', name: 'Королева Орды', icon: '👑', hp: 600, atk: 25, speed: 0.3, xp: 120, summons: true },
+];
+
+// ======================== CONFIG: WAVE MODIFIERS ========================
+const WAVE_MODS = {
+  normal: { name: 'Обычная', color: '#aaa', hpMul: 1, atkMul: 1, countMul: 1 },
+  fog: { name: 'Туман', color: '#8888bb', hpMul: 1, atkMul: 1.2, countMul: 1.1, effect: 'Видимость снижена' },
+  rage: { name: 'Ярость', color: '#ee6644', hpMul: 1.2, atkMul: 1.5, countMul: 1, effect: 'Враги бьют сильнее' },
+  horde: { name: 'Орда', color: '#aaaa44', hpMul: 0.8, atkMul: 0.8, countMul: 2, effect: 'Вдвое больше врагов' },
+  boss: { name: 'Босс', color: '#ee8800', hpMul: 1, atkMul: 1, countMul: 0.5, hasBoss: true },
+  bloodmoon: { name: 'Кровавая луна', color: '#cc2222', hpMul: 1.5, atkMul: 1.5, countMul: 1.5, effect: 'Всё усилено' }
+};
+
+// ======================== CONFIG: QUESTS / CHAPTERS ========================
+const CHAPTERS = [
+  {
+    id: 1, title: 'Глава 1: Первое убежище',
+    quests: [
+      { id: 'q1_1', text: 'Построить Ферму', check: s => (s.buildings.farm||0) >= 1, reward: { food: 100, xp: 20 } },
+      { id: 'q1_2', text: 'Построить Лесопилку', check: s => (s.buildings.sawmill||0) >= 1, reward: { wood: 100, xp: 20 } },
+      { id: 'q1_3', text: 'Улучшить Штаб до ур.2', check: s => (s.buildings.hq||0) >= 2, reward: { metal: 80, xp: 30 } },
+      { id: 'q1_4', text: 'Отразить первую волну', check: s => s.stats.wavesCleared >= 1, reward: { food: 150, wood: 150, xp: 50, unlockHero: 'cole' } },
+    ]
+  },
+  {
+    id: 2, title: 'Глава 2: Радиосигнал',
+    reqChapter: 1,
+    quests: [
+      { id: 'q2_1', text: 'Построить Мастерскую', check: s => (s.buildings.workshop||0) >= 1, reward: { metal: 150, xp: 30 } },
+      { id: 'q2_2', text: 'Построить Госпиталь', check: s => (s.buildings.hospital||0) >= 1, reward: { meds: 50, xp: 30 } },
+      { id: 'q2_3', text: 'Улучшить Штаб до ур.3', check: s => (s.buildings.hq||0) >= 3, reward: { fuel: 50, xp: 40 } },
+      { id: 'q2_4', text: 'Отразить 5 волн', check: s => s.stats.wavesCleared >= 5, reward: { gems: 10, xp: 80, unlockHero: 'iris' } },
+      { id: 'q2_5', text: 'Отправить первую экспедицию', check: s => s.stats.expeditions >= 1, reward: { fuel: 80, xp: 50 } },
+    ]
+  },
+  {
+    id: 3, title: 'Глава 3: Мародёры',
+    reqChapter: 2,
+    quests: [
+      { id: 'q3_1', text: 'Построить Казарму', check: s => (s.buildings.barracks||0) >= 1, reward: { metal: 200, xp: 40 } },
+      { id: 'q3_2', text: 'Построить Стену', check: s => (s.buildings.wall||0) >= 1, reward: { wood: 200, xp: 40 } },
+      { id: 'q3_3', text: 'Улучшить Штаб до ур.5', check: s => (s.buildings.hq||0) >= 5, reward: { gems: 20, xp: 60 } },
+      { id: 'q3_4', text: 'Набрать 3 выживших', check: s => s.heroes.length >= 3, reward: { food: 300, wood: 300, xp: 80 } },
+      { id: 'q3_5', text: 'Отразить 10 волн', check: s => s.stats.wavesCleared >= 10, reward: { gems: 30, xp: 120, unlockHero: 'tobias' } },
+      { id: 'q3_6', text: 'Победить Босса', check: s => s.stats.bossesKilled >= 1, reward: { gems: 50, xp: 200, unlockHero: 'victor' } },
+    ]
+  }
+];
+
+const DAILY_REWARDS = [
+  { food: 50, wood: 50 },
+  { metal: 40, fuel: 20 },
+  { food: 80, wood: 80, metal: 40 },
+  { meds: 30, gems: 2 },
+  { food: 120, wood: 120, metal: 60 },
+  { gems: 5, fuel: 40 },
+  { gems: 10, food: 200, wood: 200, metal: 100 },
+];
+
+// ======================== CONFIG: MAP LOCATIONS ========================
+const MAP_LOCATIONS = [
+  { id: 'loc1', name: 'Заброшенный магазин', icon: '🏪', distance: 3, difficulty: 1, loot: { food: 60, wood: 30 }, xp: 15, discovered: true },
+  { id: 'loc2', name: 'Автозаправка', icon: '⛽', distance: 5, difficulty: 2, loot: { fuel: 40, metal: 20 }, xp: 25 },
+  { id: 'loc3', name: 'Больница', icon: '🏥', distance: 7, difficulty: 3, loot: { meds: 50, food: 30 }, xp: 35 },
+  { id: 'loc4', name: 'Военная база', icon: '🎖️', distance: 10, difficulty: 5, loot: { metal: 80, fuel: 40, meds: 20 }, xp: 60 },
+  { id: 'loc5', name: 'Лагерь мародёров', icon: '🏴', distance: 8, difficulty: 4, loot: { food: 100, wood: 60, gems: 3 }, xp: 50 },
+  { id: 'loc6', name: 'Радиовышка', icon: '📡', distance: 12, difficulty: 6, loot: { gems: 8, metal: 40 }, xp: 80 },
+  { id: 'loc7', name: 'Торговый центр', icon: '🏬', distance: 15, difficulty: 7, loot: { food: 150, wood: 100, metal: 60, gems: 5 }, xp: 100 },
+  { id: 'loc8', name: 'Заражённое гнездо', icon: '☣️', distance: 18, difficulty: 9, loot: { gems: 15, meds: 60 }, xp: 150, boss: true },
+];
+
+// ======================== SAVE SYSTEM ========================
+const SAVE_VERSION = '4.2.0';
+const SAVE_KEY = 'thelastport_save';
+
+function getDefaultState() {
+  return {
+    version: SAVE_VERSION,
+    resources: { food: 200, wood: 200, metal: 100, fuel: 30, meds: 20, gems: 5 },
+    buildings: { hq: 1 },
+    constructionQueue: [], // { buildingId, targetLevel, startTime, duration }
+    heroes: [
+      createHeroState('mara', 1),
+      createHeroState('emma', 1)
+    ],
+    squad: ['mara', 'emma'],
+    day: 1,
+    hour: 6,
+    season: 'spring',
+    weather: 'clear',
+    stats: { wavesCleared: 0, zombiesKilled: 0, bossesKilled: 0, expeditions: 0, totalXP: 0, playTime: 0 },
+    completedQuests: [],
+    currentChapter: 1,
+    lastDailyDate: null,
+    dailyStreak: 0,
+    discoveredLocations: ['loc1'],
+    activeExpedition: null, // { locationId, startTime, duration, squad }
+    lastSaveTime: Date.now(),
+    wallHP: 100,
+    maxWallHP: 100,
+    morale: 50,
+    playerLevel: 1,
+    playerXP: 0,
+    researchPoints: 0,
+  };
+}
+
+function createHeroState(templateId, level) {
+  const t = HERO_TEMPLATES.find(h => h.id === templateId);
+  if (!t) return null;
+  return {
+    id: t.id,
+    level: level || 1,
+    xp: 0,
+    hp: t.baseHP,
+    maxHP: t.baseHP,
+    wounded: false,
+    woundHealTime: 0,
+    equipped: null,
+    skillCooldown: 0,
+  };
+}
+
+function saveGame() {
+  State.lastSaveTime = Date.now();
+  localStorage.setItem(SAVE_KEY, JSON.stringify(State));
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return getDefaultState();
+    const data = JSON.parse(raw);
+    // Version migration
+    const def = getDefaultState();
+    for (const key in def) {
+      if (!(key in data)) data[key] = def[key];
+    }
+    if (!data.stats.bossesKilled) data.stats.bossesKilled = 0;
+    if (!data.stats.expeditions) data.stats.expeditions = 0;
+    if (!data.constructionQueue) data.constructionQueue = [];
+    if (!data.discoveredLocations) data.discoveredLocations = ['loc1'];
+    if (!data.activeExpedition) data.activeExpedition = null;
+    data.version = SAVE_VERSION;
+    return data;
+  } catch(e) {
+    console.error('Save corrupted, resetting:', e);
+    return getDefaultState();
+  }
+}
+
+// ======================== GAME STATE ========================
+let State = loadGame();
+
+// ======================== UTILITY ========================
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function fmt(n) { return n >= 1000 ? (n/1000).toFixed(1)+'K' : Math.floor(n).toString(); }
+function fmtTime(sec) {
+  sec = Math.max(0, Math.ceil(sec));
+  const m = Math.floor(sec/60), s = sec%60;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+function canAfford(costs) {
+  for (const r in costs) {
+    if ((State.resources[r]||0) < costs[r]) return false;
+  }
+  return true;
+}
+function spendResources(costs) {
+  for (const r in costs) State.resources[r] = (State.resources[r]||0) - costs[r];
+}
+function addResources(rewards) {
+  const lim = getStorageLimit();
+  for (const r in rewards) {
+    if (r === 'xp') { addXP(rewards[r]); continue; }
+    if (r === 'unlockHero') { unlockHero(rewards[r]); continue; }
+    if (r === 'gems') { State.resources.gems = (State.resources.gems||0) + rewards[r]; continue; }
+    State.resources[r] = Math.min((State.resources[r]||0) + rewards[r], lim);
+  }
+}
+function getStorageLimit() {
+  return 500 + (State.buildings.warehouse||0) * 200;
+}
+function addXP(amount) {
+  State.playerXP += amount;
+  State.stats.totalXP += amount;
+  const needed = State.playerLevel * 100;
+  while (State.playerXP >= needed) {
+    State.playerXP -= needed;
+    State.playerLevel++;
+    toast(`Уровень ${State.playerLevel}!`, 'success');
+  }
+}
+function unlockHero(heroId) {
+  if (State.heroes.find(h => h.id === heroId)) return;
+  const h = createHeroState(heroId, 1);
+  if (h) {
+    State.heroes.push(h);
+    const t = HERO_TEMPLATES.find(x => x.id === heroId);
+    toast(`Новый выживший: ${t.name}!`, 'success');
+  }
+}
+function getHeroTemplate(id) { return HERO_TEMPLATES.find(h => h.id === id); }
+function getHeroState(id) { return State.heroes.find(h => h.id === id); }
+
+function getHeroEffectiveStats(heroState) {
+  const t = getHeroTemplate(heroState.id);
+  const lvl = heroState.level;
+  return {
+    hp: t.baseHP + (lvl-1) * 20,
+    atk: t.baseATK + (lvl-1) * 4,
+    def: t.baseDEF + (lvl-1) * 3,
+  };
+}
+
+// ======================== TOAST ========================
+function toast(msg, type='warning') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ======================== MODAL ========================
+const Modal = {
+  show(html) {
+    document.getElementById('modal-box').innerHTML = html;
+    document.getElementById('modal-overlay').classList.add('active');
+  },
+  close() {
+    document.getElementById('modal-overlay').classList.remove('active');
+  }
+};
+
+// ======================== CAMERA ========================
+const Camera = {
+  x: 0, y: 0, zoom: 1, minZoom: 0.5, maxZoom: 2.5,
+  dragging: false, dragStartX: 0, dragStartY: 0, camStartX: 0, camStartY: 0,
+
+  init() {
+    const cvs = document.getElementById('base-canvas');
+    cvs.addEventListener('mousedown', e => { this.dragging=true; this.dragStartX=e.clientX; this.dragStartY=e.clientY; this.camStartX=this.x; this.camStartY=this.y; });
+    cvs.addEventListener('mousemove', e => { if (!this.dragging) return; this.x = this.camStartX + (e.clientX - this.dragStartX); this.y = this.camStartY + (e.clientY - this.dragStartY); });
+    cvs.addEventListener('mouseup', () => this.dragging=false);
+    cvs.addEventListener('mouseleave', () => this.dragging=false);
+    cvs.addEventListener('wheel', e => { e.preventDefault(); if (e.deltaY < 0) this.zoomIn(); else this.zoomOut(); }, { passive: false });
+    // Touch
+    cvs.addEventListener('touchstart', e => { if (e.touches.length===1) { this.dragging=true; this.dragStartX=e.touches[0].clientX; this.dragStartY=e.touches[0].clientY; this.camStartX=this.x; this.camStartY=this.y; }});
+    cvs.addEventListener('touchmove', e => { if (!this.dragging||e.touches.length!==1) return; e.preventDefault(); this.x=this.camStartX+(e.touches[0].clientX-this.dragStartX); this.y=this.camStartY+(e.touches[0].clientY-this.dragStartY); }, { passive: false });
+    cvs.addEventListener('touchend', () => this.dragging=false);
+  },
+  zoomIn() { this.zoom = Math.min(this.maxZoom, this.zoom + 0.2); },
+  zoomOut() { this.zoom = Math.max(this.minZoom, this.zoom - 0.2); },
+  reset() { this.x = 0; this.y = 0; this.zoom = 1; }
+};
+
+// ======================== BASE RENDERER ========================
+const BaseRenderer = {
+  canvas: null, ctx: null,
+  tileW: 80, tileH: 40,
+
+  init() {
+    this.canvas = document.getElementById('base-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+  },
+
+  resize() {
+    const rect = this.canvas.parentElement.getBoundingClientRect();
+    this.canvas.width = rect.width * devicePixelRatio;
+    this.canvas.height = rect.height * devicePixelRatio;
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+    this.ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  },
+
+  render() {
+    const ctx = this.ctx;
+    const w = this.canvas.width / devicePixelRatio;
+    const h = this.canvas.height / devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+
+    // Sky gradient based on hour
+    const hour = State.hour;
+    let skyTop, skyBot;
+    if (hour >= 6 && hour < 18) {
+      skyTop = '#1a2a3a'; skyBot = '#2a3a4a';
+    } else if (hour >= 18 && hour < 21) {
+      skyTop = '#1a1520'; skyBot = '#2a2030';
+    } else {
+      skyTop = '#0a0810'; skyBot = '#151020';
+    }
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, skyTop);
+    grad.addColorStop(1, skyBot);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.translate(w/2 + Camera.x, h * 0.3 + Camera.y);
+    ctx.scale(Camera.zoom, Camera.zoom);
+
+    // Draw ground grid
+    const gridSize = 8;
+    for (let gy = -gridSize; gy < gridSize; gy++) {
+      for (let gx = -gridSize; gx < gridSize; gx++) {
+        const sx = (gx - gy) * this.tileW / 2;
+        const sy = (gx + gy) * this.tileH / 2;
+        this.drawTile(ctx, sx, sy, '#1a2518', '#2a3528');
+      }
+    }
+
+    // Place buildings
+    const placements = this.getBuildingPlacements();
+    for (const p of placements) {
+      const sx = (p.gx - p.gy) * this.tileW / 2;
+      const sy = (p.gx + p.gy) * this.tileH / 2;
+      this.drawBuilding(ctx, sx, sy, p);
+    }
+
+    ctx.restore();
+
+    // HUD overlay on canvas
+    ctx.fillStyle = 'rgba(255,255,255,.04)';
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = '#556';
+    ctx.fillText(`Zoom: ${(Camera.zoom*100).toFixed(0)}%`, 10, h - 10);
+  },
+
+  drawTile(ctx, x, y, fill, stroke) {
+    const tw = this.tileW, th = this.tileH;
+    ctx.beginPath();
+    ctx.moveTo(x, y - th/2);
+    ctx.lineTo(x + tw/2, y);
+    ctx.lineTo(x, y + th/2);
+    ctx.lineTo(x - tw/2, y);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  },
+
+  drawBuilding(ctx, x, y, placement) {
+    const tw = this.tileW, th = this.tileH;
+    const buildingConf = BUILDINGS[placement.id];
+    const level = State.buildings[placement.id] || 0;
+    const isConstructing = State.constructionQueue.some(q => q.buildingId === placement.id);
+
+    // Building base tile
+    ctx.beginPath();
+    ctx.moveTo(x, y - th/2);
+    ctx.lineTo(x + tw/2, y);
+    ctx.lineTo(x, y + th/2);
+    ctx.lineTo(x - tw/2, y);
+    ctx.closePath();
+    ctx.fillStyle = isConstructing ? '#3a3520' : (level > 0 ? '#2a3028' : '#1a1a18');
+    ctx.fill();
+    ctx.strokeStyle = isConstructing ? '#e8a624' : (level > 0 ? '#4a5a48' : '#333');
+    ctx.lineWidth = isConstructing ? 2 : 1;
+    ctx.stroke();
+
+    if (level > 0 || isConstructing) {
+      // Building body (isometric box)
+      const bh = 20 + level * 3;
+      ctx.beginPath();
+      ctx.moveTo(x - tw/2, y);
+      ctx.lineTo(x - tw/2, y - bh);
+      ctx.lineTo(x, y - bh - th/2);
+      ctx.lineTo(x, y - th/2);
+      ctx.closePath();
+      ctx.fillStyle = isConstructing ? '#4a4020' : '#3a4538';
+      ctx.fill();
+      ctx.strokeStyle = '#5a6a58';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x + tw/2, y);
+      ctx.lineTo(x + tw/2, y - bh);
+      ctx.lineTo(x, y - bh - th/2);
+      ctx.lineTo(x, y - th/2);
+      ctx.closePath();
+      ctx.fillStyle = isConstructing ? '#3a3018' : '#2a3528';
+      ctx.fill();
+      ctx.stroke();
+
+      // Roof
+      ctx.beginPath();
+      ctx.moveTo(x, y - bh - th/2);
+      ctx.lineTo(x + tw/2, y - bh);
+      ctx.lineTo(x, y - bh + th/2);
+      ctx.lineTo(x - tw/2, y - bh);
+      ctx.closePath();
+      ctx.fillStyle = isConstructing ? '#e8a624' : '#5a6a58';
+      ctx.fill();
+
+      // Icon
+      ctx.font = '18px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(buildingConf.icon, x, y - bh - th/2 - 4);
+
+      // Level badge
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`Lv.${level}`, x, y + th/2 + 12);
+
+      // Construction timer
+      if (isConstructing) {
+        const q = State.constructionQueue.find(q => q.buildingId === placement.id);
+        if (q) {
+          const remaining = Math.max(0, (q.startTime + q.duration * 1000) - Date.now());
+          const text = remaining > 0 ? fmtTime(remaining / 1000) : 'Готово!';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.fillStyle = '#e8a624';
+          ctx.fillText(`⏳ ${text}`, x, y - bh - th/2 - 20);
+        }
+      }
+
+      // Production indicator
+      if (buildingConf.production && level > 0 && !isConstructing) {
+        const rate = buildingConf.production.base + level * buildingConf.production.perLvl;
+        ctx.font = '9px sans-serif';
+        ctx.fillStyle = '#8c8';
+        ctx.fillText(`+${rate}/m`, x, y + th/2 + 22);
+      }
+    }
+    ctx.textAlign = 'start';
+  },
+
+  getBuildingPlacements() {
+    const positions = [
+      { id: 'hq', gx: 0, gy: 0 },
+      { id: 'farm', gx: -2, gy: 0 },
+      { id: 'sawmill', gx: 0, gy: -2 },
+      { id: 'workshop', gx: 2, gy: 0 },
+      { id: 'generator', gx: 0, gy: 2 },
+      { id: 'hospital', gx: -2, gy: -2 },
+      { id: 'barracks', gx: 2, gy: -2 },
+      { id: 'watchtower', gx: 2, gy: 2 },
+      { id: 'wall', gx: -2, gy: 2 },
+      { id: 'warehouse', gx: -3, gy: 1 },
+      { id: 'lab', gx: 3, gy: -1 },
+      { id: 'kitchen', gx: -1, gy: -3 },
+    ];
+    return positions;
+  }
+};
+
+// ======================== PANEL SYSTEM ========================
+const Panel = {
+  currentTab: 'base',
+
+  close() {
+    const sp = document.getElementById('side-panel');
+    if (window.innerWidth <= 768) sp.classList.remove('open');
+  },
+
+  show(title, html) {
+    document.getElementById('panel-title').textContent = title;
+    document.getElementById('panel-content').innerHTML = html;
+    if (window.innerWidth <= 768) {
+      document.getElementById('side-panel').classList.add('open');
+    }
+  }
+};
+
+// ======================== NAVIGATION ========================
+const Nav = {
+  current: 'base',
+
+  go(tab) {
+    this.current = tab;
+    document.querySelectorAll('#bottombar button').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('nav-' + tab);
+    if (btn) btn.classList.add('active');
+
+    switch(tab) {
+      case 'base': this.showBase(); break;
+      case 'build': this.showBuild(); break;
+      case 'heroes': this.showHeroes(); break;
+      case 'battle': this.showBattle(); break;
+      case 'map': this.showMap(); break;
+      case 'quests': this.showQuests(); break;
+      case 'more': this.showMore(); break;
+    }
+  },
+
+  showBase() {
+    let constructionHtml = '';
+    if (State.constructionQueue.length > 0) {
+      constructionHtml = '<div class="card"><div class="card-title">🔨 Строительство</div>';
+      for (const q of State.constructionQueue) {
+        const b = BUILDINGS[q.buildingId];
+        const remaining = Math.max(0, (q.startTime + q.duration * 1000) - Date.now());
+        const pct = 100 - (remaining / (q.duration * 1000)) * 100;
+        constructionHtml += `
+          <div class="card-row"><span>${b.icon} ${b.name} → Ур.${q.targetLevel}</span><span>${remaining > 0 ? fmtTime(remaining/1000) : '✅ Готово!'}</span></div>
+          <div class="progress-bar"><div class="fill fill-accent" style="width:${pct}%"></div></div>
+        `;
+        if (remaining <= 0) {
+          constructionHtml += `<button class="btn-primary btn-small mt-8" onclick="Construction.complete('${q.buildingId}')">Завершить</button>`;
+        } else {
+          constructionHtml += `<button class="btn-danger btn-small mt-8" onclick="Construction.cancel('${q.buildingId}')">Отменить</button>`;
+        }
+      }
+      constructionHtml += '</div>';
+    }
+
+    const wallPct = State.maxWallHP > 0 ? (State.wallHP / State.maxWallHP * 100) : 0;
+    const storeLim = getStorageLimit();
+
+    let html = `
+      <div class="card">
+        <div class="card-title">🏛️ Штаб — Уровень ${State.buildings.hq||1}</div>
+        <div class="card-row"><span class="label">Уровень игрока</span><span>${State.playerLevel} (${State.playerXP}/${State.playerLevel*100} XP)</span></div>
+        <div class="card-row"><span class="label">День</span><span>${State.day}</span></div>
+        <div class="card-row"><span class="label">Мораль</span><span>${State.morale}%</span></div>
+        <div class="card-row"><span class="label">Лимит ресурсов</span><span>${storeLim}</span></div>
+        <div class="card-row"><span class="label">Выжившие</span><span>${State.heroes.length}</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🧱 Стена</div>
+        <div class="card-row"><span class="label">Прочность</span><span>${State.wallHP}/${State.maxWallHP}</span></div>
+        <div class="progress-bar"><div class="fill ${wallPct > 50 ? 'fill-heal' : 'fill-danger'}" style="width:${wallPct}%"></div></div>
+        <button class="btn-secondary btn-small mt-8" onclick="Actions.repairWall()" ${State.resources.wood >= 10 && State.wallHP < State.maxWallHP ? '' : 'disabled'}>🔧 Починить (10 🪵)</button>
+      </div>
+      ${constructionHtml}
+      <div class="card">
+        <div class="card-title">📊 Статистика</div>
+        <div class="card-row"><span class="label">Волн отражено</span><span>${State.stats.wavesCleared}</span></div>
+        <div class="card-row"><span class="label">Зомби убито</span><span>${State.stats.zombiesKilled}</span></div>
+        <div class="card-row"><span class="label">Боссов убито</span><span>${State.stats.bossesKilled}</span></div>
+        <div class="card-row"><span class="label">Экспедиций</span><span>${State.stats.expeditions}</span></div>
+      </div>
+    `;
+    Panel.show('🏚️ База', html);
+  },
+
+  showBuild() {
+    const hqLevel = State.buildings.hq || 1;
+    let html = '<div class="tab-row">';
+    html += '<button class="tab-btn active" onclick="Nav.showBuild()">Все здания</button>';
+    html += '</div>';
+
+    for (const id in BUILDINGS) {
+      const b = BUILDINGS[id];
+      const currentLevel = State.buildings[id] || 0;
+      const nextLevel = currentLevel + 1;
+      const isMaxed = currentLevel >= b.maxLevel;
+      const isConstructing = State.constructionQueue.some(q => q.buildingId === id);
+      const reqHQ = b.reqHQ || 0;
+      const locked = reqHQ > hqLevel;
+
+      let statusText = '';
+      if (locked) statusText = `🔒 Нужен Штаб ур.${reqHQ}`;
+      else if (isMaxed) statusText = '✅ Максимум';
+      else if (isConstructing) statusText = '🔨 Строится...';
+      else statusText = `Уровень ${currentLevel}`;
+
+      const costs = !isMaxed && !locked ? b.costs(nextLevel) : {};
+      const affordable = canAfford(costs);
+      const canBuild = !isMaxed && !locked && !isConstructing && affordable && State.constructionQueue.length < 1;
+
+      let costHtml = '';
+      if (!isMaxed && !locked) {
+        costHtml = '<div class="cost-row">';
+        for (const r in costs) {
+          const has = (State.resources[r]||0) >= costs[r];
+          costHtml += `<span class="cost-item ${has ? 'affordable' : 'expensive'}">${RES_NAMES[r]?.split(' ')[0]||r} ${costs[r]}</span>`;
+        }
+        costHtml += `<span class="cost-item">⏱️ ${fmtTime(b.time(nextLevel))}</span>`;
+        costHtml += '</div>';
+      }
+
+      html += `
+        <div class="building-item ${isConstructing ? 'building-constructing' : ''}">
+          <div class="building-ico">${b.icon}</div>
+          <div class="building-info">
+            <div class="building-name">${b.name}</div>
+            <div class="building-desc">${b.desc}</div>
+            <div class="building-level">${statusText}</div>
+            ${!isMaxed && !locked ? `<div class="text-sm text-dim mt-8">${b.effect(nextLevel)}</div>` : ''}
+            ${costHtml}
+            ${canBuild ? `<button class="btn-primary btn-small mt-8" onclick="Construction.start('${id}')">Строить → Ур.${nextLevel}</button>` :
+              (!isMaxed && !locked && !isConstructing && State.constructionQueue.length >= 1 ? '<div class="text-sm text-danger mt-8">Строитель занят</div>' : '')}
+          </div>
+        </div>
+      `;
+    }
+    Panel.show('🔨 Строительство', html);
+  },
+
+  showHeroes() {
+    let html = '';
+    for (const hs of State.heroes) {
+      const t = getHeroTemplate(hs.id);
+      if (!t) continue;
+      const stats = getHeroEffectiveStats(hs);
+      const inSquad = State.squad.includes(hs.id);
+      const xpNeeded = hs.level * 50;
+
+      html += `
+        <div class="hero-card rarity-${t.rarity}" onclick="Nav.showHeroDetail('${hs.id}')">
+          <div class="hero-avatar" style="background:${t.avatarBG}">${t.icon}</div>
+          <div class="hero-info">
+            <div class="hero-name">${t.name} ${hs.wounded ? '🩹' : ''}</div>
+            <div class="hero-class">${t.className} · Ур.${hs.level} · ${t.rarity}</div>
+            <div class="hero-stats">
+              <span>❤️ <span class="stat-val">${stats.hp}</span></span>
+              <span>⚔️ <span class="stat-val">${stats.atk}</span></span>
+              <span>🛡️ <span class="stat-val">${stats.def}</span></span>
+            </div>
+            <div class="progress-bar" style="margin-top:4px"><div class="fill fill-accent" style="width:${(hs.xp/xpNeeded)*100}%"></div></div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <button class="btn-small ${inSquad ? 'btn-danger' : 'btn-secondary'}" onclick="event.stopPropagation(); Actions.toggleSquad('${hs.id}')">
+                ${inSquad ? '➖ Убрать' : '➕ В отряд'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const squadNames = State.squad.map(id => {
+      const t = getHeroTemplate(id);
+      return t ? t.icon + ' ' + t.name : id;
+    }).join(', ');
+    html = `
+      <div class="card">
+        <div class="card-title">🎯 Текущий отряд</div>
+        <div class="text-sm text-dim">${squadNames || 'Пусто'}</div>
+      </div>
+    ` + html;
+
+    Panel.show('👥 Выжившие', html);
+  },
+
+  showHeroDetail(heroId) {
+    const hs = getHeroState(heroId);
+    const t = getHeroTemplate(heroId);
+    if (!hs || !t) return;
+    const stats = getHeroEffectiveStats(hs);
+    const xpNeeded = hs.level * 50;
+
+    Modal.show(`
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:48px;margin-bottom:8px">${t.icon}</div>
+        <h3>${t.name}</h3>
+        <div class="text-dim text-sm">${t.className} · ${t.rarity} · Уровень ${hs.level}</div>
+      </div>
+      <div class="text-sm text-dim mb-8">${t.desc}</div>
+      <div class="card">
+        <div class="card-row"><span class="label">❤️ HP</span><span>${stats.hp}</span></div>
+        <div class="card-row"><span class="label">⚔️ Атака</span><span>${stats.atk}</span></div>
+        <div class="card-row"><span class="label">🛡️ Защита</span><span>${stats.def}</span></div>
+        <div class="card-row"><span class="label">📊 Опыт</span><span>${hs.xp}/${xpNeeded}</span></div>
+        <div class="progress-bar"><div class="fill fill-accent" style="width:${(hs.xp/xpNeeded)*100}%"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ ${t.skill.name}</div>
+        <div class="text-sm text-dim">${t.skill.desc}</div>
+        <div class="card-row"><span class="label">Перезарядка</span><span>${t.skill.cooldown} сек</span></div>
+      </div>
+      ${hs.wounded ? `<div class="card"><div class="text-danger text-sm">🩹 Ранен — лечится в Госпитале</div></div>` : ''}
+      <button class="btn-primary mt-12" onclick="Modal.close()">Закрыть</button>
+    `);
+  },
+
+  showBattle() {
+    const waveNum = State.stats.wavesCleared + 1;
+    const waveMod = getWaveModifier(waveNum);
+    const squadReady = State.squad.length > 0 && !State.squad.some(id => {
+      const hs = getHeroState(id);
+      return hs && hs.wounded;
+    });
+
+    let html = `
+      <div class="card">
+        <div class="card-title">⚔️ Оборона базы</div>
+        <div class="card-row"><span class="label">Следующая волна</span><span class="text-accent">#${waveNum}</span></div>
+        <div class="card-row"><span class="label">Модификатор</span><span style="color:${waveMod.color}">${waveMod.name}</span></div>
+        ${waveMod.effect ? `<div class="card-row"><span class="label">Эффект</span><span class="text-dim">${waveMod.effect}</span></div>` : ''}
+        <div class="card-row"><span class="label">Стена</span><span>${State.wallHP}/${State.maxWallHP}</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🎯 Отряд обороны</div>
+    `;
+    if (State.squad.length === 0) {
+      html += '<div class="text-sm text-dim">Назначьте выживших в отряд во вкладке Выжившие</div>';
+    } else {
+      for (const id of State.squad) {
+        const hs = getHeroState(id);
+        const t = getHeroTemplate(id);
+        if (!hs || !t) continue;
+        const stats = getHeroEffectiveStats(hs);
+        html += `<div class="card-row"><span>${t.icon} ${t.name} ${hs.wounded ? '🩹' : ''}</span><span>ATK ${stats.atk} · DEF ${stats.def}</span></div>`;
+      }
+    }
+    html += `</div>
+      <button class="btn-primary mt-12" onclick="BattleScene.start()" ${squadReady ? '' : 'disabled'}>
+        ${squadReady ? '⚔️ Начать оборону' : (State.squad.length === 0 ? 'Назначьте отряд' : '🩹 Есть раненые')}
+      </button>
+    `;
+    Panel.show('⚔️ Оборона', html);
+  },
+
+  showMap() {
+    let html = `
+      <div class="card">
+        <div class="card-title">🗺️ Карта региона</div>
+        <div class="text-sm text-dim mb-8">Отправляйте отряды на разведку и сбор ресурсов.</div>
+      </div>
+    `;
+
+    // Active expedition
+    if (State.activeExpedition) {
+      const loc = MAP_LOCATIONS.find(l => l.id === State.activeExpedition.locationId);
+      const remaining = Math.max(0, (State.activeExpedition.startTime + State.activeExpedition.duration * 1000) - Date.now());
+      const pct = 100 - (remaining / (State.activeExpedition.duration * 1000)) * 100;
+      html += `
+        <div class="card">
+          <div class="card-title">🚶 Активная экспедиция</div>
+          <div class="card-row"><span>${loc.icon} ${loc.name}</span></div>
+          <div class="progress-bar"><div class="fill fill-accent" style="width:${pct}%"></div></div>
+          <div class="card-row"><span class="label">Осталось</span><span>${remaining > 0 ? fmtTime(remaining/1000) : '✅ Готово!'}</span></div>
+          ${remaining <= 0 ? `<button class="btn-primary btn-small mt-8" onclick="Expeditions.complete()">Забрать добычу</button>` : ''}
+        </div>
+      `;
+    }
+
+    for (const loc of MAP_LOCATIONS) {
+      const discovered = State.discoveredLocations.includes(loc.id);
+      const hasActiveExp = State.activeExpedition !== null;
+      const fuelCost = loc.distance * 3;
+      const canGo = discovered && !hasActiveExp && (State.resources.fuel || 0) >= fuelCost && State.squad.length > 0;
+
+      let lootText = Object.entries(loc.loot).map(([r, v]) => `${RES_NAMES[r]?.split(' ')[0]||r} ${v}`).join(', ');
+
+      html += `
+        <div class="building-item" style="${!discovered ? 'opacity:0.4' : ''}">
+          <div class="building-ico">${discovered ? loc.icon : '❓'}</div>
+          <div class="building-info">
+            <div class="building-name">${discovered ? loc.name : '???'}</div>
+            <div class="building-desc">${discovered ? `Расстояние: ${loc.distance} · Сложность: ${'⭐'.repeat(loc.difficulty)}` : 'Не обнаружено'}</div>
+            ${discovered ? `<div class="text-sm text-dim mt-8">Добыча: ${lootText} · +${loc.xp} XP</div>` : ''}
+            ${discovered ? `<div class="cost-row"><span class="cost-item ${(State.resources.fuel||0)>=fuelCost?'affordable':'expensive'}">⛽ ${fuelCost}</span><span class="cost-item">⏱️ ${fmtTime(loc.distance * 20)}</span></div>` : ''}
+            ${canGo ? `<button class="btn-primary btn-small mt-8" onclick="Expeditions.send('${loc.id}')">🚶 Отправить отряд</button>` : ''}
+            ${!discovered ? `<button class="btn-secondary btn-small mt-8" onclick="Expeditions.discover('${loc.id}')" ${(State.resources.fuel||0)>=5 ? '' : 'disabled'}>🔍 Разведать (5 ⛽)</button>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    Panel.show('🗺️ Карта', html);
+  },
+
+  showQuests() {
+    let html = '';
+
+    // Daily reward
+    const today = new Date().toDateString();
+    const canClaimDaily = State.lastDailyDate !== today;
+    if (canClaimDaily) {
+      const dayIndex = State.dailyStreak % 7;
+      const reward = DAILY_REWARDS[dayIndex];
+      const rewardText = Object.entries(reward).map(([r,v]) => `${RES_NAMES[r]?.split(' ')[0]||r} ${v}`).join(', ');
+      html += `
+        <div class="card" style="border-color:var(--accent)">
+          <div class="card-title">🎁 Ежедневная награда (День ${State.dailyStreak + 1})</div>
+          <div class="text-sm text-dim mb-8">${rewardText}</div>
+          <button class="btn-primary" onclick="Actions.claimDaily()">Забрать!</button>
+        </div>
+      `;
+    }
+
+    // Chapters
+    for (const ch of CHAPTERS) {
+      if (ch.reqChapter && !CHAPTERS.find(c => c.id === ch.reqChapter)?.quests.every(q => State.completedQuests.includes(q.id))) {
+        html += `
+          <div class="card" style="opacity:.4">
+            <div class="card-title">🔒 ${ch.title}</div>
+            <div class="text-sm text-dim">Завершите предыдущую главу</div>
+          </div>
+        `;
+        continue;
+      }
+
+      html += `<div class="card"><div class="card-title">📖 ${ch.title}</div>`;
+      for (const q of ch.quests) {
+        const done = State.completedQuests.includes(q.id);
+        const complete = !done && q.check(State);
+        const rewardText = Object.entries(q.reward)
+          .filter(([k]) => k !== 'unlockHero')
+          .map(([r,v]) => `${RES_NAMES[r]?.split(' ')[0]||r||'XP'} ${v}`).join(', ');
+        const heroReward = q.reward.unlockHero ? ` + 🆕 ${getHeroTemplate(q.reward.unlockHero)?.name || ''}` : '';
+
+        html += `
+          <div class="quest-item" style="${done ? 'opacity:.5' : ''}">
+            <div class="quest-title">${done ? '✅' : (complete ? '⭐' : '⬜')} ${q.text}</div>
+            <div class="quest-reward">🎁 ${rewardText}${heroReward}</div>
+            ${complete ? `<button class="btn-primary btn-small mt-8" onclick="Actions.claimQuest('${q.id}')">Получить награду</button>` : ''}
+          </div>
+        `;
+      }
+      html += '</div>';
+    }
+
+    Panel.show('📋 Задания', html);
+  },
+
+  showMore() {
+    let html = `
+      <div class="card">
+        <div class="card-title">⚙️ Настройки</div>
+        <button class="btn-secondary mb-8" onclick="saveGame(); toast('Сохранено!','success')" style="width:100%">💾 Сохранить</button>
+        <button class="btn-danger" onclick="Actions.resetGame()" style="width:100%">🗑️ Сбросить прогресс</button>
+      </div>
+      <div class="card">
+        <div class="card-title">ℹ️ The Last Port v4.2</div>
+        <div class="text-sm text-dim">Siege Update</div>
+        <div class="text-sm text-dim mt-8">Survival Strategy Game</div>
+        <div class="text-sm text-dim mt-8">Сохранение: ${SAVE_VERSION}</div>
+      </div>
+    `;
+    Panel.show('☰ Ещё', html);
+  }
+};
+
+// ======================== CONSTRUCTION ========================
+const Construction = {
+  start(buildingId) {
+    if (State.constructionQueue.length >= 1) { toast('Строитель занят!', 'danger'); return; }
+    const b = BUILDINGS[buildingId];
+    const currentLevel = State.buildings[buildingId] || 0;
+    const nextLevel = currentLevel + 1;
+    if (nextLevel > b.maxLevel) { toast('Максимальный уровень!', 'danger'); return; }
+    if (b.reqHQ && (State.buildings.hq||1) < b.reqHQ) { toast(`Нужен Штаб ур.${b.reqHQ}`, 'danger'); return; }
+
+    const costs = b.costs(nextLevel);
+    if (!canAfford(costs)) { toast('Не хватает ресурсов!', 'danger'); return; }
+
+    spendResources(costs);
+    const duration = b.time(nextLevel); // seconds
+
+    State.constructionQueue.push({
+      buildingId,
+      targetLevel: nextLevel,
+      startTime: Date.now(),
+      duration
+    });
+
+    toast(`${b.icon} ${b.name} → Ур.${nextLevel} (${fmtTime(duration)})`, 'success');
+    saveGame();
+    Nav.go('build');
+  },
+
+  complete(buildingId) {
+    const idx = State.constructionQueue.findIndex(q => q.buildingId === buildingId);
+    if (idx === -1) return;
+    const q = State.constructionQueue[idx];
+    const remaining = (q.startTime + q.duration * 1000) - Date.now();
+    if (remaining > 0) { toast('Ещё не готово!', 'danger'); return; }
+
+    State.buildings[buildingId] = q.targetLevel;
+    State.constructionQueue.splice(idx, 1);
+
+    // Update wall HP if wall upgraded
+    if (buildingId === 'wall') {
+      State.maxWallHP = 100 + q.targetLevel * 50;
+      State.wallHP = State.maxWallHP;
+    }
+
+    const b = BUILDINGS[buildingId];
+    toast(`${b.icon} ${b.name} → Ур.${q.targetLevel} завершено!`, 'success');
+    saveGame();
+    Nav.go(Nav.current);
+  },
+
+  cancel(buildingId) {
+    const idx = State.constructionQueue.findIndex(q => q.buildingId === buildingId);
+    if (idx === -1) return;
+    const q = State.constructionQueue[idx];
+    const b = BUILDINGS[buildingId];
+    // Refund 50%
+    const costs = b.costs(q.targetLevel);
+    for (const r in costs) {
+      State.resources[r] = (State.resources[r]||0) + Math.floor(costs[r] * 0.5);
+    }
+    State.constructionQueue.splice(idx, 1);
+    toast(`Строительство ${b.name} отменено. 50% ресурсов возвращено.`, 'warning');
+    saveGame();
+    Nav.go(Nav.current);
+  },
+
+  checkCompletions() {
+    const now = Date.now();
+    for (const q of State.constructionQueue) {
+      if (q.startTime + q.duration * 1000 <= now && !q._notified) {
+        q._notified = true;
+        const b = BUILDINGS[q.buildingId];
+        toast(`${b.icon} ${b.name} готово к завершению!`, 'success');
+      }
+    }
+  }
+};
+
+// ======================== EXPEDITIONS ========================
+const Expeditions = {
+  discover(locId) {
+    if ((State.resources.fuel||0) < 5) { toast('Нужно 5 ⛽', 'danger'); return; }
+    State.resources.fuel -= 5;
+    if (!State.discoveredLocations.includes(locId)) {
+      State.discoveredLocations.push(locId);
+      const loc = MAP_LOCATIONS.find(l => l.id === locId);
+      toast(`${loc.icon} ${loc.name} обнаружено!`, 'success');
+    }
+    saveGame();
+    Nav.go('map');
+  },
+
+  send(locId) {
+    if (State.activeExpedition) { toast('Уже есть активная экспедиция!', 'danger'); return; }
+    if (State.squad.length === 0) { toast('Назначьте отряд!', 'danger'); return; }
+    const loc = MAP_LOCATIONS.find(l => l.id === locId);
+    const fuelCost = loc.distance * 3;
+    if ((State.resources.fuel||0) < fuelCost) { toast('Нужно больше топлива!', 'danger'); return; }
+
+    State.resources.fuel -= fuelCost;
+    State.activeExpedition = {
+      locationId: locId,
+      startTime: Date.now(),
+      duration: loc.distance * 20, // seconds
+      squad: [...State.squad]
+    };
+    State.stats.expeditions++;
+    toast(`Отряд отправлен к ${loc.icon} ${loc.name}`, 'success');
+    saveGame();
+    Nav.go('map');
+  },
+
+  complete() {
+    if (!State.activeExpedition) return;
+    const remaining = (State.activeExpedition.startTime + State.activeExpedition.duration * 1000) - Date.now();
+    if (remaining > 0) { toast('Отряд ещё в пути!', 'danger'); return; }
+
+    const loc = MAP_LOCATIONS.find(l => l.id === State.activeExpedition.locationId);
+    // Calculate success based on squad strength vs difficulty
+    let totalPower = 0;
+    for (const id of State.activeExpedition.squad) {
+      const hs = getHeroState(id);
+      if (hs) {
+        const stats = getHeroEffectiveStats(hs);
+        totalPower += stats.atk + stats.def;
+      }
+    }
+    const successChance = clamp(0.5 + (totalPower - loc.difficulty * 15) / 100, 0.2, 0.95);
+    const success = Math.random() < successChance;
+
+    if (success) {
+      addResources(loc.loot);
+      addXP(loc.xp);
+      // Grant hero XP
+      for (const id of State.activeExpedition.squad) {
+        grantHeroXP(id, loc.xp);
+      }
+      // Discover next location
+      const locIdx = MAP_LOCATIONS.findIndex(l => l.id === loc.id);
+      if (locIdx + 1 < MAP_LOCATIONS.length) {
+        const nextLoc = MAP_LOCATIONS[locIdx + 1];
+        if (!State.discoveredLocations.includes(nextLoc.id)) {
+          State.discoveredLocations.push(nextLoc.id);
+          toast(`Обнаружено: ${nextLoc.icon} ${nextLoc.name}`, 'success');
+        }
+      }
+      const lootText = Object.entries(loc.loot).map(([r,v]) => `${RES_NAMES[r]?.split(' ')[0]||r} ${v}`).join(', ');
+      toast(`✅ Экспедиция успешна! ${lootText}`, 'success');
+    } else {
+      // Wound a random hero
+      const woundId = pick(State.activeExpedition.squad);
+      const hs = getHeroState(woundId);
+      if (hs) {
+        hs.wounded = true;
+        hs.woundHealTime = Date.now() + 120000; // 2 min
+      }
+      // Still get partial loot
+      const partial = {};
+      for (const r in loc.loot) partial[r] = Math.floor(loc.loot[r] * 0.3);
+      addResources(partial);
+      toast(`⚠️ Экспедиция провалена. ${getHeroTemplate(woundId)?.name} ранен.`, 'danger');
+    }
+
+    State.activeExpedition = null;
+    saveGame();
+    Nav.go('map');
+  }
+};
+
+function grantHeroXP(heroId, amount) {
+  const hs = getHeroState(heroId);
+  if (!hs) return;
+  hs.xp += amount;
+  const needed = hs.level * 50;
+  while (hs.xp >= needed) {
+    hs.xp -= needed;
+    hs.level++;
+    const t = getHeroTemplate(heroId);
+    toast(`${t.icon} ${t.name} → Ур.${hs.level}!`, 'success');
+  }
+}
+
+// ======================== ACTIONS ========================
+const Actions = {
+  repairWall() {
+    if (State.resources.wood < 10) { toast('Нужно 10 🪵', 'danger'); return; }
+    if (State.wallHP >= State.maxWallHP) { toast('Стена не повреждена', 'warning'); return; }
+    State.resources.wood -= 10;
+    State.wallHP = Math.min(State.maxWallHP, State.wallHP + 25);
+    toast('🧱 Стена починена +25', 'success');
+    saveGame();
+    Nav.go(Nav.current);
+  },
+
+  toggleSquad(heroId) {
+    const hs = getHeroState(heroId);
+    if (!hs) return;
+    if (hs.wounded) { toast('Герой ранен!', 'danger'); return; }
+    const maxSquad = 3 + Math.floor((State.buildings.barracks||0) / 2);
+    const idx = State.squad.indexOf(heroId);
+    if (idx >= 0) {
+      State.squad.splice(idx, 1);
+    } else {
+      if (State.squad.length >= maxSquad) { toast(`Максимум ${maxSquad} бойцов`, 'danger'); return; }
+      State.squad.push(heroId);
+    }
+    saveGame();
+    Nav.go('heroes');
+  },
+
+  claimDaily() {
+    const today = new Date().toDateString();
+    if (State.lastDailyDate === today) { toast('Уже получено сегодня', 'warning'); return; }
+    const dayIndex = State.dailyStreak % 7;
+    const reward = DAILY_REWARDS[dayIndex];
+    addResources(reward);
+    State.lastDailyDate = today;
+    State.dailyStreak++;
+    const rewardText = Object.entries(reward).map(([r,v]) => `${RES_NAMES[r]?.split(' ')[0]||r} ${v}`).join(', ');
+    toast(`🎁 ${rewardText}`, 'success');
+    saveGame();
+    Nav.go('quests');
+  },
+
+  claimQuest(questId) {
+    if (State.completedQuests.includes(questId)) return;
+    let quest = null;
+    for (const ch of CHAPTERS) {
+      const q = ch.quests.find(q => q.id === questId);
+      if (q) { quest = q; break; }
+    }
+    if (!quest) return;
+    if (!quest.check(State)) { toast('Задание не выполнено', 'danger'); return; }
+    addResources(quest.reward);
+    State.completedQuests.push(questId);
+    saveGame();
+    Nav.go('quests');
+  },
+
+  resetGame() {
+    Modal.show(`
+      <h3>⚠️ Сбросить прогресс?</h3>
+      <div class="text-sm text-dim mb-12">Все данные будут удалены навсегда.</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-danger" style="flex:1" onclick="localStorage.removeItem('${SAVE_KEY}'); location.reload();">Сбросить</button>
+        <button class="btn-secondary" style="flex:1" onclick="Modal.close()">Отмена</button>
+      </div>
+    `);
+  }
+};
+
+// ======================== WAVE MODIFIER SELECTION ========================
+function getWaveModifier(waveNum) {
+  if (waveNum % 10 === 0) return WAVE_MODS.bloodmoon;
+  if (waveNum % 5 === 0) return WAVE_MODS.boss;
+  const pool = ['normal', 'fog', 'rage', 'horde', 'normal'];
+  const modKey = pool[(waveNum - 1) % pool.length];
+  return WAVE_MODS[modKey];
+}
+
+// ======================== BATTLE SCENE (Canvas) ========================
+const BattleScene = {
+  active: false,
+  paused: false,
+  speed: 1,
+  canvas: null,
+  ctx: null,
+  animFrame: null,
+  lastTime: 0,
+
+  // Battle state
+  heroes: [],
+  enemies: [],
+  turrets: [],
+  particles: [],
+  floatingTexts: [],
+  waveNum: 0,
+  waveMod: null,
+  kills: 0,
+  elapsed: 0,
+  enemiesSpawned: 0,
+  totalEnemiesToSpawn: 0,
+  spawnTimer: 0,
+  spawnInterval: 2,
+  battleOver: false,
+  victory: false,
+  wallHP: 0,
+  maxWallHP: 0,
+
+  // Skill effects
+  buffATK: 0,
+  buffATKTimer: 0,
+  shieldMul: 0,
+  shieldTimer: 0,
+  debuffTarget: null,
+  debuffTimer: 0,
+
+  start() {
+    if (State.squad.length === 0) { toast('Назначьте отряд!', 'danger'); return; }
+    const hasWounded = State.squad.some(id => { const hs = getHeroState(id); return hs && hs.wounded; });
+    if (hasWounded) { toast('Есть раненые!', 'danger'); return; }
+
+    this.waveNum = State.stats.wavesCleared + 1;
+    this.waveMod = getWaveModifier(this.waveNum);
+    this.kills = 0;
+    this.elapsed = 0;
+    this.enemiesSpawned = 0;
+    this.battleOver = false;
+    this.victory = false;
+    this.speed = 1;
+    this.paused = false;
+    this.enemies = [];
+    this.turrets = [];
+    this.particles = [];
+    this.floatingTexts = [];
+    this.buffATK = 0; this.buffATKTimer = 0;
+    this.shieldMul = 0; this.shieldTimer = 0;
+    this.debuffTarget = null; this.debuffTimer = 0;
+
+    // Setup wall
+    this.wallHP = State.wallHP;
+    this.maxWallHP = State.maxWallHP;
+
+    // Calculate enemies
+    const baseCount = 5 + this.waveNum * 2;
+    this.totalEnemiesToSpawn = Math.ceil(baseCount * this.waveMod.countMul);
+    this.spawnTimer = 0;
+    this.spawnInterval = Math.max(0.5, 2 - this.waveNum * 0.05);
+
+    // Setup heroes
+    this.heroes = [];
+    const positions = [0.25, 0.5, 0.75, 0.35, 0.65];
+    State.squad.forEach((id, i) => {
+      const hs = getHeroState(id);
+      const t = getHeroTemplate(id);
+      const stats = getHeroEffectiveStats(hs);
+      this.heroes.push({
+        id: id,
+        template: t,
+        hp: stats.hp,
+        maxHP: stats.hp,
+        atk: stats.atk,
+        def: stats.def,
+        x: 0.15,
+        y: positions[i] || 0.5,
+        attackTimer: 0,
+        attackSpeed: t.classId === 'shooter' ? 1.2 : (t.classId === 'tank' ? 2.5 : 1.8),
+        range: t.classId === 'shooter' ? 0.4 : (t.classId === 'medic' ? 0.35 : 0.15),
+        skillCooldown: 0,
+        skillReady: true,
+        alive: true,
+      });
+    });
+
+    // Show overlay
+    this.canvas = document.getElementById('battle-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    document.getElementById('battle-overlay').classList.add('active');
+    this.resize();
+    this.updateHUD();
+    this.active = true;
+    this.lastTime = performance.now();
+    document.getElementById('btn-speed').textContent = '⏩ x1';
+
+    // Update header
+    document.getElementById('battle-wave-info').textContent = `Волна ${this.waveNum}`;
+    document.getElementById('battle-wave-type').textContent = this.waveMod.name;
+    document.getElementById('battle-wave-type').style.color = this.waveMod.color;
+
+    this.animFrame = requestAnimationFrame(t => this.loop(t));
+  },
+
+  resize() {
+    const parent = document.getElementById('battle-arena');
+    const rect = parent.getBoundingClientRect();
+    this.canvas.width = rect.width * devicePixelRatio;
+    this.canvas.height = rect.height * devicePixelRatio;
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+  },
+
+  loop(time) {
+    if (!this.active) return;
+    const rawDt = (time - this.lastTime) / 1000;
+    this.lastTime = time;
+    const dt = Math.min(rawDt, 0.1) * this.speed;
+
+    if (!this.paused && !this.battleOver) {
+      this.elapsed += dt;
+      this.update(dt);
+    }
+    this.draw();
+    this.animFrame = requestAnimationFrame(t => this.loop(t));
+  },
+
+  update(dt) {
+    // Spawn enemies
+    this.spawnTimer += dt;
+    while (this.spawnTimer >= this.spawnInterval && this.enemiesSpawned < this.totalEnemiesToSpawn) {
+      this.spawnTimer -= this.spawnInterval;
+      this.spawnEnemy();
+      this.enemiesSpawned++;
+    }
+
+    // Update buffs/debuffs
+    if (this.buffATKTimer > 0) { this.buffATKTimer -= dt; if (this.buffATKTimer <= 0) this.buffATK = 0; }
+    if (this.shieldTimer > 0) { this.shieldTimer -= dt; if (this.shieldTimer <= 0) this.shieldMul = 0; }
+    if (this.debuffTimer > 0) { this.debuffTimer -= dt; if (this.debuffTimer <= 0) this.debuffTarget = null; }
+
+    // Update turrets
+    for (let i = this.turrets.length - 1; i >= 0; i--) {
+      const tur = this.turrets[i];
+      tur.lifetime -= dt;
+      if (tur.lifetime <= 0) { this.turrets.splice(i, 1); continue; }
+      tur.attackTimer += dt;
+      if (tur.attackTimer >= 1) {
+        tur.attackTimer = 0;
+        const target = this.enemies.find(e => e.alive);
+        if (target) {
+          target.hp -= tur.dmg;
+          this.addFloatingText(target.x, target.y, `-${tur.dmg}`, '#ff8844');
+          if (target.hp <= 0) { target.alive = false; this.kills++; }
+        }
+      }
+    }
+
+    // Update heroes
+    for (const hero of this.heroes) {
+      if (!hero.alive) continue;
+      hero.attackTimer += dt;
+      hero.skillCooldown = Math.max(0, hero.skillCooldown - dt);
+      hero.skillReady = hero.skillCooldown <= 0;
+
+      // Find nearest enemy
+      let nearest = null, nearDist = Infinity;
+      for (const e of this.enemies) {
+        if (!e.alive) continue;
+        const d = Math.hypot(e.x - hero.x, e.y - hero.y);
+        if (d < nearDist) { nearDist = d; nearest = e; }
+      }
+
+      if (nearest && hero.attackTimer >= hero.attackSpeed) {
+        hero.attackTimer = 0;
+        let dmg = hero.atk + (hero.atk * this.buffATK);
+        dmg -= (nearest.def || 0);
+        if (this.debuffTarget === nearest) dmg *= 1.5;
+        dmg = Math.max(1, Math.floor(dmg));
+        nearest.hp -= dmg;
+        this.addFloatingText(nearest.x, nearest.y, `-${dmg}`, '#ffcc44');
+        this.addParticle(nearest.x, nearest.y, '#ff6644');
+        if (nearest.hp <= 0) {
+          nearest.alive = false;
+          this.kills++;
+        }
+      }
+
+      // Medic auto-heal
+      if (hero.template.classId === 'medic' && hero.attackTimer >= hero.attackSpeed) {
+        const wounded = this.heroes.filter(h => h.alive && h.hp < h.maxHP).sort((a,b) => a.hp/a.maxHP - b.hp/b.maxHP);
+        if (wounded.length > 0) {
+          const target = wounded[0];
+          const heal = Math.floor(hero.atk * 0.5);
+          target.hp = Math.min(target.maxHP, target.hp + heal);
+          this.addFloatingText(target.x, target.y - 0.02, `+${heal}`, '#44cc66');
+        }
+      }
+    }
+
+    // Update enemies
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+
+      // Move toward heroes/wall
+      let targetX = 0.05; // wall position
+      let targetY = e.y;
+      let nearest = null, nearDist = Infinity;
+      for (const h of this.heroes) {
+        if (!h.alive) continue;
+        const d = Math.hypot(h.x - e.x, h.y - e.y);
+        if (d < nearDist) { nearDist = d; nearest = h; }
+      }
+      if (nearest) { targetX = nearest.x; targetY = nearest.y; }
+
+      const dx = targetX - e.x;
+      const dy = targetY - e.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 0.06) {
+        e.x += (dx / dist) * e.speed * dt * 0.1;
+        e.y += (dy / dist) * e.speed * dt * 0.1;
+      } else {
+        // Attack
+        e.attackTimer += dt;
+        if (e.attackTimer >= 1.5) {
+          e.attackTimer = 0;
+          if (nearest && Math.hypot(nearest.x - e.x, nearest.y - e.y) < 0.08) {
+            let dmg = e.atk;
+            if (this.shieldMul > 0) dmg = Math.floor(dmg * (1 - this.shieldMul));
+            dmg -= nearest.def * 0.3;
+            dmg = Math.max(1, Math.floor(dmg));
+            nearest.hp -= dmg;
+            this.addFloatingText(nearest.x, nearest.y, `-${dmg}`, '#ff4444');
+            if (nearest.hp <= 0) nearest.alive = false;
+          } else if (e.x <= 0.08) {
+            // Attack wall
+            this.wallHP -= e.atk;
+            this.addFloatingText(0.05, e.y, `-${e.atk}`, '#ff2222');
+          }
+        }
+      }
+    }
+
+    // Cleanup dead enemies
+    this.enemies = this.enemies.filter(e => e.alive || e.deathTimer > 0);
+
+    // Update particles
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (p.life <= 0) this.particles.splice(i, 1);
+    }
+
+    // Update floating texts
+    for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+      const ft = this.floatingTexts[i];
+      ft.life -= dt;
+      ft.y -= dt * 0.04;
+      if (ft.life <= 0) this.floatingTexts.splice(i, 1);
+    }
+
+    // Check win/lose
+    const allHeroesDead = this.heroes.every(h => !h.alive);
+    const allEnemiesDead = this.enemiesSpawned >= this.totalEnemiesToSpawn && this.enemies.every(e => !e.alive);
+    const wallBroken = this.wallHP <= 0;
+
+    if (allEnemiesDead) {
+      this.battleOver = true;
+      this.victory = true;
+      setTimeout(() => this.showResult(), 500);
+    } else if (allHeroesDead || wallBroken) {
+      this.battleOver = true;
+      this.victory = false;
+      setTimeout(() => this.showResult(), 500);
+    }
+
+    // Update HUD
+    document.getElementById('battle-kills').textContent = `☠️ ${this.kills}`;
+    document.getElementById('battle-timer').textContent = fmtTime(this.elapsed);
+  },
+
+  spawnEnemy() {
+    let template;
+    if (this.waveMod.hasBoss && this.enemiesSpawned === this.totalEnemiesToSpawn - 1) {
+      template = pick(BOSS_TYPES);
+    } else {
+      const pool = ENEMY_TYPES.filter(e => {
+        if (e.id === 'brute' && this.waveNum < 3) return false;
+        if (e.id === 'spitter' && this.waveNum < 4) return false;
+        if (e.id === 'screamer' && this.waveNum < 6) return false;
+        return true;
+      });
+      template = pick(pool);
+    }
+
+    this.enemies.push({
+      id: template.id,
+      name: template.name,
+      icon: template.icon,
+      hp: Math.floor(template.hp * this.waveMod.hpMul * (1 + this.waveNum * 0.1)),
+      maxHP: Math.floor(template.hp * this.waveMod.hpMul * (1 + this.waveNum * 0.1)),
+      atk: Math.floor(template.atk * this.waveMod.atkMul * (1 + this.waveNum * 0.05)),
+      def: 0,
+      speed: template.speed,
+      x: 0.95 + Math.random() * 0.1,
+      y: 0.15 + Math.random() * 0.7,
+      attackTimer: 0,
+      alive: true,
+      isBoss: BOSS_TYPES.some(b => b.id === template.id),
+      xp: template.xp,
+    });
+  },
+
+  draw() {
+    const ctx = this.ctx;
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    const dw = w / devicePixelRatio;
+    const dh = h / devicePixelRatio;
+
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, dw, 0);
+    grad.addColorStop(0, '#1a2210');
+    grad.addColorStop(1, '#0e0810');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, dw, dh);
+
+    // Ground
+    ctx.fillStyle = '#1a2818';
+    ctx.fillRect(0, dh * 0.7, dw, dh * 0.3);
+
+    // Fog effect for fog modifier
+    if (this.waveMod === WAVE_MODS.fog) {
+      ctx.fillStyle = 'rgba(100,100,150,.15)';
+      ctx.fillRect(0, 0, dw, dh);
+    }
+    // Blood moon
+    if (this.waveMod === WAVE_MODS.bloodmoon) {
+      ctx.fillStyle = 'rgba(150,20,20,.1)';
+      ctx.fillRect(0, 0, dw, dh);
+      // Moon
+      ctx.beginPath();
+      ctx.arc(dw * 0.85, dh * 0.12, 25, 0, Math.PI * 2);
+      ctx.fillStyle = '#cc2222';
+      ctx.fill();
+    }
+
+    // Wall
+    const wallPct = this.maxWallHP > 0 ? this.wallHP / this.maxWallHP : 0;
+    ctx.fillStyle = wallPct > 0.5 ? '#4a5a48' : (wallPct > 0.2 ? '#6a5a38' : '#6a3a28');
+    ctx.fillRect(dw * 0.05 - 4, dh * 0.1, 8, dh * 0.8);
+    // Wall HP bar
+    ctx.fillStyle = '#222';
+    ctx.fillRect(dw * 0.01, dh * 0.05, 12, dh * 0.9);
+    ctx.fillStyle = wallPct > 0.5 ? '#44aa44' : '#cc4444';
+    ctx.fillRect(dw * 0.01, dh * 0.05 + dh * 0.9 * (1 - wallPct), 12, dh * 0.9 * wallPct);
+
+    // Draw turrets
+    for (const tur of this.turrets) {
+      ctx.font = '16px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🔫', tur.x * dw, tur.y * dh);
+    }
+
+    // Draw heroes
+    for (const hero of this.heroes) {
+      if (!hero.alive) continue;
+      const hx = hero.x * dw;
+      const hy = hero.y * dh;
+
+      // Shadow
+      ctx.beginPath();
+      ctx.ellipse(hx, hy + 14, 12, 4, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.fill();
+
+      // Body
+      ctx.font = '24px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(hero.template.icon, hx, hy);
+
+      // HP bar
+      const barW = 30;
+      const hpPct = hero.hp / hero.maxHP;
+      ctx.fillStyle = '#111';
+      ctx.fillRect(hx - barW/2, hy - 22, barW, 4);
+      ctx.fillStyle = hpPct > 0.5 ? '#44cc66' : (hpPct > 0.25 ? '#ccaa44' : '#cc4444');
+      ctx.fillRect(hx - barW/2, hy - 22, barW * hpPct, 4);
+
+      // Skill ready indicator
+      if (hero.skillReady) {
+        ctx.fillStyle = '#e8a624';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.fillText('⚡', hx + 16, hy - 16);
+      }
+
+      // Shield effect
+      if (this.shieldMul > 0 && this.shieldTimer > 0) {
+        ctx.beginPath();
+        ctx.arc(hx, hy - 4, 18, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(68,136,238,.4)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    // Draw enemies
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const ex = e.x * dw;
+      const ey = e.y * dh;
+
+      // Shadow
+      ctx.beginPath();
+      ctx.ellipse(ex, ey + 14, e.isBoss ? 18 : 10, 4, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.fill();
+
+      // Body
+      ctx.font = e.isBoss ? '32px serif' : '20px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(e.icon, ex, ey);
+
+      // HP bar
+      const barW = e.isBoss ? 40 : 24;
+      const hpPct = e.hp / e.maxHP;
+      ctx.fillStyle = '#111';
+      ctx.fillRect(ex - barW/2, ey - 20, barW, 3);
+      ctx.fillStyle = '#cc4444';
+      ctx.fillRect(ex - barW/2, ey - 20, barW * hpPct, 3);
+
+      // Debuff marker
+      if (this.debuffTarget === e) {
+        ctx.fillStyle = '#ff4488';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('🎯', ex + 14, ey - 12);
+      }
+    }
+
+    // Draw particles
+    for (const p of this.particles) {
+      ctx.beginPath();
+      ctx.arc(p.x * dw, p.y * dh, 2 * p.life, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Draw floating texts
+    for (const ft of this.floatingTexts) {
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = Math.min(1, ft.life * 2);
+      ctx.fillStyle = ft.color;
+      ctx.fillText(ft.text, ft.x * dw, ft.y * dh);
+      ctx.globalAlpha = 1;
+    }
+
+    // Wave progress
+    const spawnPct = this.totalEnemiesToSpawn > 0 ? this.enemiesSpawned / this.totalEnemiesToSpawn : 0;
+    ctx.fillStyle = '#222';
+    ctx.fillRect(dw * 0.3, dh * 0.02, dw * 0.4, 6);
+    ctx.fillStyle = this.waveMod.color;
+    ctx.fillRect(dw * 0.3, dh * 0.02, dw * 0.4 * spawnPct, 6);
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#888';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Враги: ${this.enemiesSpawned}/${this.totalEnemiesToSpawn}`, dw * 0.5, dh * 0.02 + 16);
+
+    ctx.textAlign = 'start';
+  },
+
+  addFloatingText(x, y, text, color) {
+    this.floatingTexts.push({ x, y, text, color, life: 1 });
+  },
+
+  addParticle(x, y, color) {
+    for (let i = 0; i < 3; i++) {
+      this.particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        color, life: 0.5 + Math.random() * 0.5
+      });
+    }
+  },
+
+  updateHUD() {
+    let html = '';
+    for (const hero of this.heroes) {
+      const hpPct = hero.alive ? (hero.hp / hero.maxHP * 100) : 0;
+      const t = hero.template;
+      const cd = hero.skillCooldown;
+      html += `
+        <div class="battle-hero-hud">
+          <div class="bh-name">${t.icon} ${t.name}</div>
+          <div class="bh-hp-bar"><div class="bh-hp-fill" style="width:${hpPct}%"></div></div>
+          <div class="bh-skill">
+            <button onclick="BattleScene.useSkill('${hero.id}')" ${hero.skillReady && hero.alive ? '' : 'disabled'}>
+              ⚡ ${t.skill.name} ${cd > 0 ? `(${Math.ceil(cd)}s)` : ''}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+    document.getElementById('battle-hud').innerHTML = html;
+  },
+
+  useSkill(heroId) {
+    const hero = this.heroes.find(h => h.id === heroId);
+    if (!hero || !hero.alive || !hero.skillReady) return;
+    const t = hero.template;
+    const skill = t.skill;
+    hero.skillCooldown = skill.cooldown;
+    hero.skillReady = false;
+
+    switch(skill.type) {
+      case 'buff_atk':
+        this.buffATK = skill.value;
+        this.buffATKTimer = skill.duration;
+        this.addFloatingText(hero.x, hero.y - 0.04, '🔥 ATK UP!', '#ffaa00');
+        break;
+      case 'damage_single': {
+        const target = this.enemies.filter(e => e.alive).sort((a,b) => b.hp - a.hp)[0];
+        if (target) {
+          const dmg = Math.floor(hero.atk * skill.value);
+          target.hp -= dmg;
+          this.addFloatingText(target.x, target.y, `-${dmg}💥`, '#ff4400');
+          this.addParticle(target.x, target.y, '#ff6600');
+          if (target.hp <= 0) { target.alive = false; this.kills++; }
+        }
+        break;
+      }
+      case 'debuff_target': {
+        const target = this.enemies.filter(e => e.alive).sort((a,b) => b.hp - a.hp)[0];
+        if (target) {
+          this.debuffTarget = target;
+          this.debuffTimer = skill.duration;
+          this.addFloatingText(target.x, target.y, '🎯 WEAK!', '#ff44aa');
+        }
+        break;
+      }
+      case 'shield':
+        this.shieldMul = skill.value;
+        this.shieldTimer = skill.duration;
+        this.addFloatingText(hero.x, hero.y - 0.04, '🛡️ SHIELD!', '#4488ee');
+        break;
+      case 'heal_all':
+        for (const h of this.heroes) {
+          if (!h.alive) continue;
+          const heal = Math.floor(h.maxHP * skill.value);
+          h.hp = Math.min(h.maxHP, h.hp + heal);
+          this.addFloatingText(h.x, h.y - 0.03, `+${heal}`, '#44cc66');
+        }
+        break;
+      case 'summon_turret':
+        this.turrets.push({
+          x: hero.x + 0.08,
+          y: hero.y,
+          dmg: skill.value,
+          lifetime: skill.duration,
+          attackTimer: 0
+        });
+        this.addFloatingText(hero.x, hero.y - 0.04, '🔫 TURRET!', '#886644');
+        break;
+    }
+    this.updateHUD();
+  },
+
+  toggleSpeed() {
+    this.speed = this.speed === 1 ? 2 : 1;
+    document.getElementById('btn-speed').textContent = `⏩ x${this.speed}`;
+  },
+
+  retreat() {
+    this.battleOver = true;
+    this.victory = false;
+    this.showResult();
+  },
+
+  showResult() {
+    this.active = false;
+    if (this.animFrame) cancelAnimationFrame(this.animFrame);
+
+    const xpEarned = this.kills * 5;
+    const foodReward = this.victory ? 20 + this.waveNum * 10 : 5;
+    const woodReward = this.victory ? 15 + this.waveNum * 8 : 3;
+    const metalReward = this.victory ? 10 + this.waveNum * 5 : 0;
+    const gemReward = this.victory && this.waveNum % 5 === 0 ? 5 : 0;
+
+    // Apply results
+    if (this.victory) {
+      State.stats.wavesCleared++;
+      if (this.waveMod.hasBoss) State.stats.bossesKilled++;
+    }
+    State.stats.zombiesKilled += this.kills;
+    State.wallHP = Math.max(0, this.wallHP);
+
+    addResources({ food: foodReward, wood: woodReward, metal: metalReward, gems: gemReward });
+    addXP(xpEarned);
+
+    // Grant hero XP and check wounds
+    for (const hero of this.heroes) {
+      const hs = getHeroState(hero.id);
+      if (!hs) continue;
+      grantHeroXP(hero.id, Math.floor(xpEarned / this.heroes.length));
+      if (!hero.alive) {
+        hs.wounded = true;
+        hs.woundHealTime = Date.now() + 120000;
+      }
+    }
+
+    saveGame();
+
+    // Show result screen
+    const box = document.getElementById('result-box');
+    box.innerHTML = `
+      <h2 class="${this.victory ? 'result-victory' : 'result-defeat'}">${this.victory ? '⚔️ ПОБЕДА!' : '💀 ПОРАЖЕНИЕ'}</h2>
+      <div class="text-dim">Волна ${this.waveNum} — ${this.waveMod.name}</div>
+      <div class="result-stats">
+        <div class="rs-row"><span>Убито зомби</span><span>☠️ ${this.kills}</span></div>
+        <div class="rs-row"><span>Время</span><span>⏱️ ${fmtTime(this.elapsed)}</span></div>
+        <div class="rs-row"><span>Стена</span><span>🧱 ${Math.max(0, Math.floor(this.wallHP))}/${this.maxWallHP}</span></div>
+        <div class="rs-row"><span>Опыт</span><span>⭐ ${xpEarned}</span></div>
+      </div>
+      <div class="result-rewards">
+        <h4>🎁 Награды:</h4>
+        ${foodReward ? `<div class="rr-item">🍖 Еда: +${foodReward}</div>` : ''}
+        ${woodReward ? `<div class="rr-item">🪵 Дерево: +${woodReward}</div>` : ''}
+        ${metalReward ? `<div class="rr-item">⚙️ Металл: +${metalReward}</div>` : ''}
+        ${gemReward ? `<div class="rr-item">💎 Кристаллы: +${gemReward}</div>` : ''}
+      </div>
+      ${this.heroes.filter(h => !h.alive).map(h => `<div class="text-danger text-sm">🩹 ${h.template.name} ранен</div>`).join('')}
+      <button class="btn-primary mt-12" onclick="BattleScene.closeBattle()">Продолжить</button>
+    `;
+    document.getElementById('battle-result').classList.add('active');
+  },
+
+  closeBattle() {
+    document.getElementById('battle-result').classList.remove('active');
+    document.getElementById('battle-overlay').classList.remove('active');
+    Nav.go('battle');
+  }
+};
+
+// ======================== PRODUCTION SYSTEM ========================
+const Production = {
+  lastTick: Date.now(),
+
+  tick() {
+    const now = Date.now();
+    const elapsed = (now - this.lastTick) / 1000; // seconds
+    this.lastTick = now;
+    const minutes = elapsed / 60;
+    const lim = getStorageLimit();
+
+    for (const id in BUILDINGS) {
+      const b = BUILDINGS[id];
+      if (!b.production) continue;
+      const level = State.buildings[id] || 0;
+      if (level <= 0) continue;
+      if (State.constructionQueue.some(q => q.buildingId === id)) continue;
+
+      const rate = b.production.base + level * b.production.perLvl;
+      const amount = rate * minutes;
+      const res = b.production.res;
+      State.resources[res] = Math.min(lim, (State.resources[res]||0) + amount);
+    }
+  }
+};
+
+// ======================== CLOCK SYSTEM ========================
+const Clock = {
+  tickInterval: 8000, // 8 seconds = 1 game hour
+  lastTick: Date.now(),
+
+  tick() {
+    const now = Date.now();
+    if (now - this.lastTick >= this.tickInterval) {
+      this.lastTick = now;
+      State.hour++;
+      if (State.hour >= 24) {
+        State.hour = 0;
+        State.day++;
+        this.onNewDay();
+      }
+      this.updateWeather();
+    }
+  },
+
+  onNewDay() {
+    // Season change every 30 days
+    const seasons = ['spring', 'summer', 'autumn', 'winter'];
+    const seasonNames = { spring: 'Весна', summer: 'Лето', autumn: 'Осень', winter: 'Зима' };
+    const idx = Math.floor((State.day - 1) / 30) % 4;
+    State.season = seasons[idx];
+  },
+
+  updateWeather() {
+    const weathers = ['clear', 'cloudy', 'rain', 'storm', 'fog'];
+    if (Math.random() < 0.1) {
+      State.weather = pick(weathers);
+    }
+  },
+
+  getWeatherIcon() {
+    const icons = { clear: '☀️', cloudy: '⛅', rain: '🌧️', storm: '⛈️', fog: '🌫️' };
+    return icons[State.weather] || '☀️';
+  },
+
+  getSeasonName() {
+    const names = { spring: 'Весна', summer: 'Лето', autumn: 'Осень', winter: 'Зима' };
+    return names[State.season] || 'Весна';
+  }
+};
+
+// ======================== WOUND HEALING ========================
+function healWounds() {
+  const now = Date.now();
+  const hospitalLevel = State.buildings.hospital || 0;
+  const healBonus = 1 + hospitalLevel * 0.1;
+
+  for (const hs of State.heroes) {
+    if (hs.wounded && hs.woundHealTime) {
+      const adjustedTime = hs.woundHealTime - (healBonus - 1) * 30000;
+      if (now >= adjustedTime) {
+        hs.wounded = false;
+        hs.woundHealTime = 0;
+        const t = getHeroTemplate(hs.id);
+        toast(`${t.icon} ${t.name} вылечен!`, 'success');
+      }
+    }
+  }
+}
+
+// ======================== HUD UPDATER ========================
+function updateHUD() {
+  document.getElementById('res-food').textContent = fmt(State.resources.food||0);
+  document.getElementById('res-wood').textContent = fmt(State.resources.wood||0);
+  document.getElementById('res-metal').textContent = fmt(State.resources.metal||0);
+  document.getElementById('res-fuel').textContent = fmt(State.resources.fuel||0);
+  document.getElementById('res-meds').textContent = fmt(State.resources.meds||0);
+  document.getElementById('res-gems').textContent = fmt(State.resources.gems||0);
+
+  document.getElementById('hud-day').textContent = `День ${State.day}`;
+  document.getElementById('hud-time').textContent = `${String(State.hour).padStart(2,'0')}:00`;
+  document.getElementById('hud-weather').textContent = Clock.getWeatherIcon();
+  document.getElementById('hud-season').textContent = Clock.getSeasonName();
+  document.getElementById('hud-pop').textContent = `👤 ${State.heroes.length}`;
+
+  // Quest badge
+  let questCount = 0;
+  for (const ch of CHAPTERS) {
+    for (const q of ch.quests) {
+      if (!State.completedQuests.includes(q.id) && q.check(State)) questCount++;
+    }
+  }
+  const today = new Date().toDateString();
+  if (State.lastDailyDate !== today) questCount++;
+  const questBadge = document.querySelector('#nav-quests .badge');
+  if (questCount > 0) {
+    if (!questBadge) {
+      const b = document.createElement('span');
+      b.className = 'badge';
+      b.textContent = questCount;
+      document.getElementById('nav-quests').appendChild(b);
+    } else {
+      questBadge.textContent = questCount;
+    }
+  } else if (questBadge) {
+    questBadge.remove();
+  }
+
+  // Battle HUD update during battle
+  if (BattleScene.active) {
+    BattleScene.updateHUD();
+  }
+}
+
+// ======================== MAIN GAME LOOP ========================
+let lastFrameTime = 0;
+const AUTOSAVE_INTERVAL = 30000;
+let lastAutoSave = Date.now();
+
+function gameLoop(time) {
+  requestAnimationFrame(gameLoop);
+
+  Clock.tick();
+  Production.tick();
+  Construction.checkCompletions();
+  healWounds();
+  updateHUD();
+  BaseRenderer.render();
+
+  // Auto-refresh current panel periodically
+  if (time - lastFrameTime > 2000) {
+    lastFrameTime = time;
+    // Refresh side panel if on certain tabs
+    if (['base', 'map'].includes(Nav.current)) Nav.go(Nav.current);
+  }
+
+  // Autosave
+  if (Date.now() - lastAutoSave > AUTOSAVE_INTERVAL) {
+    lastAutoSave = Date.now();
+    saveGame();
+  }
+}
+
+// ======================== OFFLINE INCOME ========================
+function processOfflineIncome() {
+  const now = Date.now();
+  const elapsed = (now - State.lastSaveTime) / 1000;
+  if (elapsed < 60) return; // less than 1 minute
+
+  const minutes = Math.min(elapsed / 60, 480); // cap at 8 hours
+  const lim = getStorageLimit();
+  let totalGained = {};
+
+  for (const id in BUILDINGS) {
+    const b = BUILDINGS[id];
+    if (!b.production) continue;
+    const level = State.buildings[id] || 0;
+    if (level <= 0) continue;
+
+    const rate = b.production.base + level * b.production.perLvl;
+    const amount = Math.floor(rate * minutes);
+    const res = b.production.res;
+    State.resources[res] = Math.min(lim, (State.resources[res]||0) + amount);
+    totalGained[res] = (totalGained[res]||0) + amount;
+  }
+
+  if (Object.keys(totalGained).length > 0) {
+    const text = Object.entries(totalGained).map(([r,v]) => `${RES_NAMES[r]?.split(' ')[0]||r} +${v}`).join(', ');
+    setTimeout(() => {
+      Modal.show(`
+        <h3>🌅 Добро пожаловать!</h3>
+        <div class="text-dim text-sm mb-8">Вы отсутствовали ${Math.floor(minutes)} мин.</div>
+        <div class="card">
+          <div class="card-title">📦 Офлайн-доход</div>
+          <div class="text-sm">${text}</div>
+        </div>
+        <button class="btn-primary mt-12" onclick="Modal.close()">Отлично!</button>
+      `);
+    }, 500);
+  }
+}
+
+// ======================== INIT ========================
+function init() {
+  Camera.init();
+  BaseRenderer.init();
+
+  processOfflineIncome();
+  Production.lastTick = Date.now();
+
+  // Update wall stats based on wall level
+  const wallLevel = State.buildings.wall || 0;
+  State.maxWallHP = 100 + wallLevel * 50;
+  if (State.wallHP > State.maxWallHP) State.wallHP = State.maxWallHP;
+
+  Nav.go('base');
+  requestAnimationFrame(gameLoop);
+
+  // Handle resize for battle canvas
+  window.addEventListener('resize', () => {
+    BaseRenderer.resize();
+    if (BattleScene.active) BattleScene.resize();
+  });
+
+  console.log(`%c🏚️ The Last Port v${SAVE_VERSION} — Siege Update`, 'font-size:16px;color:#e8a624;font-weight:bold');
+}
+
+init();
+</script>
+</body>
+</html>
